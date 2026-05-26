@@ -1,9 +1,16 @@
 namespace SquadInABox.RealSquad;
 
 /// <summary>
-/// Describes the C# adapter result for one real Squad charter.
+/// Registration record for one loaded .squad charter.
+///
+/// This is NOT an agent. The actual Microsoft.Agents.AI.AIAgent wrapper around
+/// the GitHub Copilot SDK lives in <see cref="SquadAgent"/>. This record holds
+/// the metadata Aspire and the dashboard surface to the user (model, package
+/// versions, permission policy) plus an optional reference to the constructed
+/// native MAF agent, so the runtime can describe what was loaded without
+/// instantiating Copilot sessions when only a dry-run description is needed.
 /// </summary>
-public sealed record CopilotBackedMafAgent(
+public sealed record SquadAgentRegistration(
     SquadAgentDefinition Definition,
     string Model,
     string CopilotSdkPackage,

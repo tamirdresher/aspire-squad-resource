@@ -1,107 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  Squad in a Box  ·  Program.cs
-//  Spawns four AI agents (Architect, Developer, Tester, Reviewer),
-//  gives them a coding task, and shows them collaborating in real-time
-//  in a beautiful Spectre.Console TUI.
+//
+//  Entry point for the real .squad → Copilot-backed Microsoft Agent Framework
+//  workflow. The only runtime path is the live "Real Squad" web host, which
+//  exposes /status, /trace, and /incidents/simulate endpoints and triggers
+//  the constructed SquadAgent (Microsoft.Agents.AI.AIAgent wrapper around
+//  GitHub.Copilot.SDK) for each simulated incident.
 //
 //  Quick start:
-//    $env:GITHUB_TOKEN = "github_pat_..."
-//    dotnet run
+//    $env:HTTP_PORTS = "8080"
+//    dotnet run -- --real-squad --team-root <path-to-squad-workspace>
 //
-//  Custom task:
-//    dotnet run -- "Build a rate limiter middleware in C#"
+//  Under Aspire (the supported flow), AppHost wires HTTP_PORTS and the
+//  --real-squad / --construct / --trace-raw-copilot-content arguments.
 // ═══════════════════════════════════════════════════════════════════════════
 
-using Azure;
-using Azure.AI.Inference;
-using Microsoft.Extensions.AI;
-using Spectre.Console;
-using SquadInABox.Agents;
 using SquadInABox.RealSquad;
-using SquadInABox.Squad;
-using SquadInABox.UI;
 
-if (ShouldRunApi(args))
-{
-    return await RealSquadWebProgram.RunAsync(args);
-}
-
-// ── Configuration ──────────────────────────────────────────────────────────
-var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN")
-    ?? throw new InvalidOperationException(
-        """
-        GITHUB_TOKEN environment variable not set.
-
-        Get a free GitHub PAT (no scopes required) at:
-          https://github.com/settings/tokens
-
-        Then set it:
-          Windows : $env:GITHUB_TOKEN = "github_pat_..."
-          macOS   : export GITHUB_TOKEN="github_pat_..."
-        """);
-
-var model = Environment.GetEnvironmentVariable("SQUAD_MODEL") ?? "gpt-4o-mini";
-var endpoint = new Uri("https://models.inference.ai.azure.com");
-
-// ── Parse task from CLI args ───────────────────────────────────────────────
-var task = args.Length > 0
-    ? string.Join(" ", args)
-    : "Build a minimal TODO REST API in C# .NET with full CRUD operations and in-memory storage";
-
-// ── Build IChatClient factory (GitHub Models via Azure.AI.Inference) ───────
-//
-//  The IChatClient abstraction (Microsoft.Extensions.AI) means we could swap
-//  this to Azure OpenAI, Ollama, or any other backend — zero other code changes.
-//
-IChatClient CreateChatClient() =>
-    new ChatCompletionsClient(
-        endpoint,
-        new AzureKeyCredential(githubToken))
-        .AsChatClient(model);
-
-// ── Create the four Squad agents ───────────────────────────────────────────
-var roles = new[]
-{
-    AgentRole.Architect,
-    AgentRole.Developer,
-    AgentRole.Tester,
-    AgentRole.Reviewer,
-};
-
-// Each agent gets its own IChatClient instance (separate conversation history)
-var agents = roles
-    .Select(role => new SquadInABox.Agents.SquadAgent(CreateChatClient(), role))
-    .ToArray();
-
-// ── Run the demo ───────────────────────────────────────────────────────────
-var display = new SquadDisplay();
-display.RenderBanner(task, roles);
-
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
-{
-    e.Cancel = true;   // Don't kill the process — let us clean up
-    cts.Cancel();
-};
-
-try
-{
-    var orchestrator = new SquadOrchestrator(agents, display);
-    var result = await orchestrator.RunAsync(task, cts.Token);
-    return 0;
-}
-catch (OperationCanceledException)
-{
-    AnsiConsole.MarkupLine("\n[yellow]⚡ Squad session cancelled.[/]");
-    return 1;
-}
-catch (Exception ex)
-{
-    AnsiConsole.MarkupLine("\n[red]Squad session failed:[/]");
-    AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
-    return 2;
-}
-
-static bool ShouldRunApi(string[] args) =>
-    args.Contains("--real-squad", StringComparer.OrdinalIgnoreCase) ||
-    !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HTTP_PORTS"));
+return await RealSquadWebProgram.RunAsync(args);

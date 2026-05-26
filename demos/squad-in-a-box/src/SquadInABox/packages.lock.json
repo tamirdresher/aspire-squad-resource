@@ -2,16 +2,6 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
-      "Azure.AI.Inference": {
-        "type": "Direct",
-        "requested": "[1.0.0-beta.5, )",
-        "resolved": "1.0.0-beta.5",
-        "contentHash": "WlXuZqwMRlckVBc8bWyNX/eOyk0fhQNK8EaqjxlZSGpHMln7qPeB3UJ7PvyoYpuVRgihW7WHLDq/GjtHyBrM5A==",
-        "dependencies": {
-          "Azure.Core": "1.46.1",
-          "System.ClientModel": "1.4.1"
-        }
-      },
       "GitHub.Copilot.SDK": {
         "type": "Direct",
         "requested": "[1.0.0-beta.3, )",
@@ -40,17 +30,6 @@
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.5.1",
           "System.Numerics.Tensors": "10.0.6"
-        }
-      },
-      "Microsoft.Extensions.AI.AzureAIInference": {
-        "type": "Direct",
-        "requested": "[9.3.0-preview.1.25161.3, )",
-        "resolved": "9.3.0-preview.1.25161.3",
-        "contentHash": "5GIPTRUib3HHq32cCueuHTtcZKkspp/yGvTvbQvKrfQh7wihc70dZADoD6PrebJjTUmojxW5g+acxlMroxFgGQ==",
-        "dependencies": {
-          "Azure.AI.Inference": "1.0.0-beta.3",
-          "Microsoft.Extensions.AI.Abstractions": "9.3.0-preview.1.25161.3",
-          "System.Memory.Data": "9.0.3"
         }
       },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
@@ -104,16 +83,6 @@
         "resolved": "0.54.0",
         "contentHash": "StDXCFayfy0yB1xzUHT2tgEpV1/HFTiS4JgsAQS49EYTfMixSwwucaQs/bIOCwXjWwIQTMuxjUIxcB5XsJkFJA=="
       },
-      "Azure.Core": {
-        "type": "Transitive",
-        "resolved": "1.46.1",
-        "contentHash": "iE5DPOlGsN5kCkF4gN+vasN1RihO0Ypie92oQ5tohQYiokmnrrhLnee+3zcE8n7vB6ZAzhPTfUGAEXX/qHGkYA==",
-        "dependencies": {
-          "Microsoft.Bcl.AsyncInterfaces": "8.0.0",
-          "System.ClientModel": "1.4.1",
-          "System.Memory.Data": "6.0.1"
-        }
-      },
       "Microsoft.Agents.AI.Abstractions": {
         "type": "Transitive",
         "resolved": "1.5.0",
@@ -121,11 +90,6 @@
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.5.1"
         }
-      },
-      "Microsoft.Bcl.AsyncInterfaces": {
-        "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "3WA9q9yVqJp222P3x1wYIGDAkpjAku0TMUaaQV22g6L67AI0LdOIrVS7Ht2vJfLHGSPVuqN94vIr15qn+HEkHw=="
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
@@ -152,19 +116,6 @@
         "dependencies": {
           "OpenTelemetry.Api": "1.15.3"
         }
-      },
-      "System.ClientModel": {
-        "type": "Transitive",
-        "resolved": "1.4.1",
-        "contentHash": "MY7eFGKp+Hu7Ciub8wigQ0odGrkml4eTjUy8d5Bu2eGAVvm8Qskkq+YuXiiS5wMJGq7iSvqseV4skd5WxTUdDA==",
-        "dependencies": {
-          "System.Memory.Data": "6.0.1"
-        }
-      },
-      "System.Memory.Data": {
-        "type": "Transitive",
-        "resolved": "9.0.3",
-        "contentHash": "QH23aqk1Cr1oSP9zEbjsJ60M7nbYOSEQLXszzxK12VXjEOXasnI8pnF7WeME66+z8OoecHfIL8iGxCRxjFQXFQ=="
       },
       "System.Numerics.Tensors": {
         "type": "Transitive",

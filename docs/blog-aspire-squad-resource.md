@@ -222,6 +222,8 @@ The current code and screenshots prove that:
 - Each squad resource can point at a different local team root.
 - The Aspire dashboard can show one row per squad.
 - A MAF workflow project can appear in the same dashboard and reference a squad resource.
+- The squad workflow is a real `Microsoft.Agents.AI.AIAgent` implementation (single `SquadAgent` class wrapping `GitHub.Copilot.SDK`), not a placeholder.
+- Triggering an incident from the dashboard constructs 12 native MAF agents from the `.squad` charters and runs a real coordinator → subagent handoff with the prompts and per-subagent response summaries visible in `/trace` and in Aspire traces (when `--trace-raw-copilot-content` is enabled).
 - Agent rosters can be exposed as resource properties instead of top-level resource rows.
 - The resource can provide a custom `squad://resource/...` descriptor expression without implying a bound host or port.
 - Dashboard commands can be attached to the squad resource.

@@ -8,7 +8,7 @@ namespace SquadInABox.RealSquad;
 /// </summary>
 public sealed class SquadAgentFactory
 {
-    public CopilotBackedMafAgent Create(
+    public SquadAgentRegistration Create(
         SquadAgentDefinition definition,
         SquadRuntimeOptions options,
         IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)
@@ -21,7 +21,7 @@ public sealed class SquadAgentFactory
             ? CreateNativeAgent(definition, options, customAgentDefinitions)
             : null;
 
-        return new CopilotBackedMafAgent(
+        return new SquadAgentRegistration(
             Definition: definition,
             Model: options.Model,
             CopilotSdkPackage: "GitHub.Copilot.SDK/1.0.0-beta.3",

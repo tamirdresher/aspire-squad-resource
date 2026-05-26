@@ -35,23 +35,35 @@ Invoke-RestMethod "$baseUrl/status"
 
 You can also open `maf-workflow.http`, replace `@mafWorkflowUrl` with the `maf-workflow` URL from the Aspire dashboard, and run the included `GET /`, `GET /status`, `GET /health`, and `POST /incidents/simulate` requests from an HTTP file client.
 
-After **Trigger Incident** completes, `GET /status` includes a `squad` object with the loaded agent names, roles, models, and adapter status. That is the in-band proof that the HTTP trigger ran the real Squad adapter workflow, not just a placeholder endpoint. In the default sample, look for:
+After **Trigger Incident** completes, `GET /status` includes a `squad` object with the loaded agent names, roles, model, and adapter status. That is the in-band proof that the HTTP trigger ran the real Squad adapter workflow, not just a placeholder endpoint. In the default AppHost configuration, look for:
 
 ```json
 {
   "status": "Completed",
   "exitCode": 0,
   "squad": {
-    "agentsLoaded": 6,
-    "agentNames": "Data, Picard, Ralph, Scribe, Seven, Worf",
-    "nativeMafAgentsConstructed": 0
+    "agentsLoaded": 12,
+    "agentNames": "Bashir - Observability & Diagnostics, Dax - .NET Distributed Systems Engineer, Kira - SRE Operations & Mitigation, Nog - Data Science & Anomaly Detection, O'Brien - Azure DevOps / Platform Engineer, Odo - Compliance & Audit Lead, Quark - Incident Communications Lead, Ralph, Rom - Database Reliability Engineer, Scribe, Sisko - Incident Commander / SRE Lead, Worf - Security Response Engineer",
+    "nativeMafAgentsConstructed": 12
   }
 }
 ```
 
-The `maf-workflow` console logs also emit one `Real Squad agent available` line per agent, including the role, model, and adapter status. `nativeMafAgentsConstructed` is `0` by default because the safe demo path describes the Copilot-backed MAF agents without requiring Brady to authenticate live Copilot agent construction; pass `--construct` only when live Copilot auth is configured.
+The `maf-workflow` console logs also emit one `Real Squad agent available` line per agent, including the role, model, and adapter status. Every agent reports `adapter status: constructed:SquadInABox.RealSquad.SquadAgent` — a single `Microsoft.Agents.AI.AIAgent`-derived wrapper around `GitHub.Copilot.SDK`. The default AppHost path passes `--construct` so live MAF agents are built; pass `--no-construct` (or remove `--construct` from AppHost args) if you only want the describe-only path.
 
-The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. Running `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` still starts the original terminal demo; the AppHost path starts the API through Aspire endpoint configuration.
+The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` also starts the same Real Squad web host (the legacy terminal-UI demo was removed in the cleanup); under Aspire, the AppHost wires `HTTP_PORTS` and the workflow arguments automatically.
+
+## SquadAgent — the single MAF wrapper
+
+The workflow uses exactly one `Microsoft.Agents.AI.AIAgent` implementation:
+
+```
+demos\squad-in-a-box\src\SquadInABox\RealSquad\SquadAgent.cs           — public sealed class SquadAgent : AIAgent, IAsyncDisposable
+demos\squad-in-a-box\src\SquadInABox\RealSquad\SquadAgentFactory.cs    — constructs the live agent from a charter
+demos\squad-in-a-box\src\SquadInABox\RealSquad\SquadAgentRegistration.cs — metadata record (model, package versions, permission policy, NativeAgent reference)
+```
+
+`SquadAgent` wraps a `GitHubCopilotAgent` and forwards `RunAsync` / `RunStreamingAsync` / session APIs to it, prepending a Squad boundary system message. `SquadAgentRegistration` is **not** an agent — it is a `record` that holds the metadata Aspire surfaces in the dashboard (model, Copilot SDK package version, MAF package version, permission policy) plus an optional reference to the constructed native agent for describe-only runs.
 
 ## Workflow trace
 
@@ -101,7 +113,7 @@ The trace response includes:
         { "timestamp": "2024-01-15T10:30:00Z", "eventType": "IncidentQueued", "message": "Severity: Sev2, Title: Database latency" },
         { "timestamp": "2024-01-15T10:30:01Z", "eventType": "WorkflowStarted", "message": "Starting workflow for inc-abc123" },
         { "timestamp": "2024-01-15T10:30:02Z", "eventType": "SquadRuntimeDescribed", "message": "Squad loaded with 6 agents" },
-        { "timestamp": "2024-01-15T10:30:03Z", "eventType": "AgentAvailable", "message": "data (Data), role: Code Expert, model: gpt-5, adapter status: described" },
+        { "timestamp": "2024-01-15T10:30:03Z", "eventType": "AgentAvailable", "message": "sisko (Sisko - Incident Commander / SRE Lead), role: Incident Commander / SRE Lead, model: claude-sonnet-4.5, adapter status: constructed:SquadInABox.RealSquad.SquadAgent" },
         { "timestamp": "2024-01-15T10:30:10Z", "eventType": "WorkflowCompleted", "message": "Exit code: 0, Duration: 9.2s" }
       ]
     }
@@ -125,13 +137,13 @@ dotnet run --project .\src\Squad.Hosting.Aspire.Demo\Squad.Hosting.Aspire.Demo.c
 
 Or pass `--trace-raw-copilot-content` to the `SquadInABox` workflow runner. In that mode, `/trace` includes raw SDK event details when the SDK exposes them (`rawToolArguments`, `rawToolResult`, `rawAssistantContent`, and `rawSubagentDescription`), and Aspire trace spans add corresponding `copilot.*.raw` tags. This is intentionally opt-in because those values can contain prompts, repo data, tool results, credentials, or other sensitive content. Private model reasoning is still not exposed unless the SDK itself surfaces it as event content.
 
-The default AppHost path is still the public-safe adapter proof path, so `nativeMafAgentsConstructed` is `0` unless you opt into live construction with Copilot authentication. The deeper `real_squad.copilot.*` spans appear only on live SDK sessions that actually produce session events; the top-level `real_squad.agent.*` spans appear in the safe path.
+The default AppHost path now constructs live MAF agents (`--construct` is passed by AppHost) and enables raw Copilot session tracing (`--trace-raw-copilot-content`), so `nativeMafAgentsConstructed` is `12` against `samples\sample-squad2` and the deeper `real_squad.copilot.*` spans appear. The model is set in `samples\sample-squad2\.squad\config.json` (`defaultModel`); pick whatever the Copilot CLI on the current machine accepts.
 
 ## What is included
 
 - `src\CommunityToolkit.Aspire.Hosting.Squad` — Aspire hosting integration and `builder.AddSquad(...)`.
 - `src\Squad.Hosting.Aspire.Demo` — AppHost wiring multiple Squad resources and the MAF workflow.
-- `demos\squad-in-a-box\src\SquadInABox` — sample workflow process with `/status` and `POST /incidents/simulate`.
+- `demos\squad-in-a-box\src\SquadInABox` — Real-Squad web host (`/status`, `/trace`, `POST /incidents/simulate`) that constructs the single `SquadAgent : AIAgent` per charter and runs live coordinator → subagent handoffs through `GitHub.Copilot.SDK`.
 - `docs\blog-aspire-squad-resource.md` and screenshots — the write-up and dashboard proof.
 
 `squad://resource/...` is a descriptor string for Aspire metadata and dependency injection. It is not a public network protocol and does not imply that each squad row starts a server.

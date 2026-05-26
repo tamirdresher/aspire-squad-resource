@@ -8,7 +8,7 @@ public sealed record SquadRuntimeDescription(
     string SquadRoot,
     string ToolPolicyPath,
     SquadYoloMode YoloMode,
-    IReadOnlyList<CopilotBackedMafAgent> Agents,
+    IReadOnlyList<SquadAgentRegistration> Agents,
     IReadOnlyList<SquadToolDecision> ToolDecisions,
     IReadOnlyList<string> RuntimePrerequisites)
 {

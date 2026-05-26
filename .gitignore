@@ -12,3 +12,12 @@ obj/
 *.pem
 *.pfx
 *.snk
+
+# Squad runtime transient state (per-session work, not durable team memory)
+samples/*/.squad/session-state/
+samples/*/.squad/session-store.db
+samples/*/.squad/session-store.db-shm
+samples/*/.squad/session-store.db-wal
+samples/*/.squad/templates/
+samples/*/.squad/.first-run
+demos/*/src/*/.copilot/

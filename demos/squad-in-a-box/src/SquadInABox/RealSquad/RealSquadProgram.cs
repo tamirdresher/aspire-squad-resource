@@ -197,7 +197,7 @@ public static class RealSquadProgram
         }
     }
 
-    private static IReadOnlyList<CopilotBackedMafAgent> SelectIncidentSubagents(
+    private static IReadOnlyList<SquadAgentRegistration> SelectIncidentSubagents(
         SquadRuntimeDescription description,
         string coordinatorId)
     {
@@ -249,7 +249,7 @@ public static class RealSquadProgram
         return value[..maxLength] + Environment.NewLine + "[truncated]";
     }
 
-    private static CopilotBackedMafAgent SelectCoordinator(SquadRuntimeDescription description)
+    private static SquadAgentRegistration SelectCoordinator(SquadRuntimeDescription description)
     {
         return description.Agents.FirstOrDefault(agent => string.Equals(agent.Definition.Id, "sisko", StringComparison.OrdinalIgnoreCase)) ??
             description.Agents.FirstOrDefault(agent => agent.Definition.Role.Contains("lead", StringComparison.OrdinalIgnoreCase)) ??
