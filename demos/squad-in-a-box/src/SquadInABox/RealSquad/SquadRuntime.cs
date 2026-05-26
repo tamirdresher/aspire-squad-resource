@@ -22,7 +22,7 @@ public sealed class SquadRuntime
 
         var definitions = _loader.LoadAgentDefinitions(options.TeamRoot, requestedAgentIds);
         var agents = definitions
-            .Select(definition => _factory.Create(definition, options))
+            .Select(definition => _factory.Create(definition, options, definitions))
             .ToArray();
         var toolDecisions = Array.Empty<SquadToolDecision>();
         if (!string.IsNullOrWhiteSpace(options.ToolName))

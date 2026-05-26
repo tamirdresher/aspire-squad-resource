@@ -12,7 +12,8 @@ public sealed record SquadRuntimeOptions(
     string ToolPolicyPath,
     string? ToolName,
     string? TargetPath,
-    IReadOnlyDictionary<string, string> AuditParameters)
+    IReadOnlyDictionary<string, string> AuditParameters,
+    Action<CopilotSessionTraceEvent>? OnCopilotSessionEvent = null)
 {
     public string SquadRoot => Path.Combine(TeamRoot, ".squad");
 
@@ -21,3 +22,21 @@ public sealed record SquadRuntimeOptions(
             ? "YOLO is PromptlessWithinPolicy only: low-risk operations may skip prompts only after allowlist/blocklist/path policy permits them."
             : "YOLO disabled: live Copilot sessions must use explicit OnPermissionRequest approval; approval timeouts abort.";
 }
+
+public sealed record CopilotSessionTraceEvent(
+    string EventType,
+    string? RootAgentId,
+    string? SdkAgentId,
+    string? SubagentName,
+    string? SubagentDisplayName,
+    string? Model,
+    string? ToolName,
+    string? ToolCallId,
+    double? DurationMs,
+    double? TotalTokens,
+    double? TotalToolCalls,
+    int? ContentLength,
+    string? ContentSha256,
+    string? Status,
+    string? ErrorMessage,
+    IReadOnlyList<string>? Tools);

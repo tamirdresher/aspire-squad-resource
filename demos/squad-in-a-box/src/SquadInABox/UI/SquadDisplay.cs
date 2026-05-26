@@ -226,11 +226,11 @@ public sealed class SquadDisplay
     {
         // Map common colours to their Spectre name
         if (color == Color.SteelBlue1) return "steelblue1";
-        if (color == Color.Green3)     return "green3";
-        if (color == Color.Gold1)      return "gold1";
+        if (color == Color.Green3) return "green3";
+        if (color == Color.Gold1) return "gold1";
         if (color == Color.OrangeRed1) return "orangered1";
-        if (color == Color.Cyan1)      return "cyan1";
-        if (color == Color.Yellow)     return "yellow";
+        if (color == Color.Cyan1) return "cyan1";
+        if (color == Color.Yellow) return "yellow";
         return color.ToString().ToLowerInvariant();
     }
 
@@ -239,9 +239,9 @@ public sealed class SquadDisplay
         {
             "Architect" => AgentRole.Architect,
             "Developer" => AgentRole.Developer,
-            "Tester"    => AgentRole.Tester,
-            "Reviewer"  => AgentRole.Reviewer,
-            _           => null
+            "Tester" => AgentRole.Tester,
+            "Reviewer" => AgentRole.Reviewer,
+            _ => null
         };
 
     private static string TruncateForSummary(string text, int max)

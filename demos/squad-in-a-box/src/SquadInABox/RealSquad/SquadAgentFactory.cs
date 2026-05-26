@@ -8,13 +8,17 @@ namespace SquadInABox.RealSquad;
 /// </summary>
 public sealed class SquadAgentFactory
 {
-    public CopilotBackedMafAgent Create(SquadAgentDefinition definition, SquadRuntimeOptions options)
+    public CopilotBackedMafAgent Create(
+        SquadAgentDefinition definition,
+        SquadRuntimeOptions options,
+        IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)
     {
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(customAgentDefinitions);
 
         object? nativeAgent = options.ConstructNativeAgents
-            ? CreateNativeAgent(definition, options)
+            ? CreateNativeAgent(definition, options, customAgentDefinitions)
             : null;
 
         return new CopilotBackedMafAgent(
@@ -26,7 +30,10 @@ public sealed class SquadAgentFactory
             NativeAgent: nativeAgent);
     }
 
-    private static GitHubCopilotAgent CreateNativeAgent(SquadAgentDefinition definition, SquadRuntimeOptions options)
+    private static GitHubCopilotAgent CreateNativeAgent(
+        SquadAgentDefinition definition,
+        SquadRuntimeOptions options,
+        IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)
     {
         var clientOptions = new CopilotClientOptions
         {
@@ -44,11 +51,24 @@ public sealed class SquadAgentFactory
             GitHubToken = string.IsNullOrWhiteSpace(options.GitHubToken) ? null : options.GitHubToken,
             Model = options.Model,
             Streaming = true,
+            IncludeSubAgentStreamingEvents = true,
+            Agent = definition.Id,
+            CustomAgents = customAgentDefinitions
+                .Select(agent => new CustomAgentConfig
+                {
+                    Name = agent.Id,
+                    DisplayName = agent.Name,
+                    Description = agent.Description,
+                    Prompt = agent.SystemPrompt
+                })
+                .ToArray(),
             SystemMessage = new SystemMessageConfig
             {
                 Content = definition.SystemPrompt
             },
-            WorkingDirectory = options.TeamRoot
+            WorkingDirectory = options.TeamRoot,
+            OnEvent = sessionEvent => options.OnCopilotSessionEvent?.Invoke(
+                CopilotSessionTraceMapper.FromSessionEvent(definition.Id, sessionEvent))
         };
 
         var client = new CopilotClient(clientOptions);

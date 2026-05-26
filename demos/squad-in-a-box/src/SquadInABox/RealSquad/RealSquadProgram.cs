@@ -13,6 +13,14 @@ public static class RealSquadProgram
         string[] args,
         Action<SquadRuntimeDescription>? onDescriptionCreated)
     {
+        return await RunAsync(args, onDescriptionCreated, onCopilotSessionEvent: null);
+    }
+
+    public static async Task<int> RunAsync(
+        string[] args,
+        Action<SquadRuntimeDescription>? onDescriptionCreated,
+        Action<CopilotSessionTraceEvent>? onCopilotSessionEvent)
+    {
         RejectUnsafePolicyBypassArgs(args);
 
         var loader = new SquadContextLoader();
@@ -44,7 +52,8 @@ public static class RealSquadProgram
                 ToolPolicyPath: toolPolicyPath,
                 ToolName: toolName,
                 TargetPath: targetPath,
-                AuditParameters: auditParameters),
+                AuditParameters: auditParameters,
+                OnCopilotSessionEvent: onCopilotSessionEvent),
             requestedAgentIds.Count == 0 ? null : requestedAgentIds);
 
         onDescriptionCreated?.Invoke(description);

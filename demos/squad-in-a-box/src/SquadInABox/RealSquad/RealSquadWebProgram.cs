@@ -352,7 +352,7 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
             _state.MarkRunning(incident);
             using var activity = _telemetry.StartIncidentActivity(incident);
             var started = Stopwatch.GetTimestamp();
-            
+
             _traceStore.AddEvent(runId, "WorkflowStarted", $"Real Squad workflow started for incident {incident.Id} with severity {incident.Severity}");
             _logger.LogInformation(
                 "Real Squad workflow started for incident {IncidentId} with severity {Severity}.",
@@ -361,35 +361,49 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
 
             try
             {
-                var exitCode = await RealSquadProgram.RunAsync(_state.Args, description =>
-                {
-                    var observation = RealSquadObservation.From(description);
-                    _state.MarkSquadObserved(description);
-                    activity?.SetTag("squad.agents", observation.AgentNames);
-                    activity?.SetTag("squad.agents.count", observation.AgentsLoaded);
-                    activity?.SetTag("squad.native_agents.constructed", observation.NativeMafAgentsConstructed);
-
-                    _traceStore.AddEvent(runId, "SquadRuntimeDescribed", $"Squad runtime loaded: {observation.TeamRoot}");
-                    _logger.LogInformation(
-                        "Real Squad workflow loaded {AgentCount} agent(s): {Agents}. Native MAF agents constructed: {ConstructedNativeAgentCount}.",
-                        observation.AgentsLoaded,
-                        observation.AgentNames,
-                        observation.NativeMafAgentsConstructed);
-
-                    foreach (var agent in observation.Agents)
+                var exitCode = await RealSquadProgram.RunAsync(
+                    _state.Args,
+                    description =>
                     {
-                        using var agentActivity = _telemetry.StartAgentActivity(incident, agent);
-                        _traceStore.AddEvent(runId, "AgentAvailable", $"{agent.Id} ({agent.Name}), role: {agent.Role}, model: {agent.Model}, adapter status: {agent.AdapterStatus}");
+                        var observation = RealSquadObservation.From(description);
+                        _state.MarkSquadObserved(description);
+                        activity?.SetTag("squad.agents", observation.AgentNames);
+                        activity?.SetTag("squad.agents.count", observation.AgentsLoaded);
+                        activity?.SetTag("squad.native_agents.constructed", observation.NativeMafAgentsConstructed);
+
+                        _traceStore.AddEvent(runId, "SquadRuntimeDescribed", $"Squad runtime loaded: {observation.TeamRoot}");
                         _logger.LogInformation(
-                            "Real Squad agent available: {AgentId} ({AgentName}), role {AgentRole}, model {Model}, adapter status {AdapterStatus}.",
-                            agent.Id,
-                            agent.Name,
-                            agent.Role,
-                            agent.Model,
-                            agent.AdapterStatus);
-                        agentActivity?.SetStatus(ActivityStatusCode.Ok);
-                    }
-                });
+                            "Real Squad workflow loaded {AgentCount} agent(s): {Agents}. Native MAF agents constructed: {ConstructedNativeAgentCount}.",
+                            observation.AgentsLoaded,
+                            observation.AgentNames,
+                            observation.NativeMafAgentsConstructed);
+
+                        foreach (var agent in observation.Agents)
+                        {
+                            using var agentActivity = _telemetry.StartAgentActivity(incident, agent);
+                            _traceStore.AddEvent(runId, "AgentAvailable", $"{agent.Id} ({agent.Name}), role: {agent.Role}, model: {agent.Model}, adapter status: {agent.AdapterStatus}");
+                            _logger.LogInformation(
+                                "Real Squad agent available: {AgentId} ({AgentName}), role {AgentRole}, model {Model}, adapter status {AdapterStatus}.",
+                                agent.Id,
+                                agent.Name,
+                                agent.Role,
+                                agent.Model,
+                                agent.AdapterStatus);
+                            agentActivity?.SetStatus(ActivityStatusCode.Ok);
+                        }
+                    },
+                    copilotEvent =>
+                    {
+                        _telemetry.RecordCopilotSessionEvent(incident, copilotEvent);
+                        _traceStore.AddEvent(runId, "CopilotSessionEvent", _telemetry.FormatCopilotSessionEvent(copilotEvent));
+                        _logger.LogInformation(
+                            "Copilot SDK event observed for root agent {RootAgentId}: {EventType} status {EventStatus}, subagent {SubagentName}, tool {ToolName}.",
+                            copilotEvent.RootAgentId,
+                            copilotEvent.EventType,
+                            copilotEvent.Status,
+                            copilotEvent.SubagentName,
+                            copilotEvent.ToolName);
+                    });
                 _state.MarkCompleted(exitCode);
                 var duration = Stopwatch.GetElapsedTime(started);
                 _telemetry.RecordWorkflowCompleted(incident, exitCode, duration);
@@ -477,6 +491,62 @@ public sealed class RealSquadTelemetry : IDisposable
         activity?.SetTag("squad.agent.model", agent.Model);
         activity?.SetTag("squad.agent.adapter_status", agent.AdapterStatus);
         return activity;
+    }
+
+    public void RecordCopilotSessionEvent(SimulatedIncident incident, CopilotSessionTraceEvent copilotEvent)
+    {
+        using var activity = _activitySource.StartActivity($"real_squad.copilot.{copilotEvent.EventType}", ActivityKind.Internal);
+        activity?.SetTag("incident.id", incident.Id);
+        activity?.SetTag("incident.severity", incident.Severity);
+        activity?.SetTag("copilot.event.type", copilotEvent.EventType);
+        activity?.SetTag("copilot.event.status", copilotEvent.Status);
+        activity?.SetTag("copilot.root_agent.id", copilotEvent.RootAgentId);
+        activity?.SetTag("copilot.sdk_agent.id", copilotEvent.SdkAgentId);
+        activity?.SetTag("copilot.subagent.name", copilotEvent.SubagentName);
+        activity?.SetTag("copilot.subagent.display_name", copilotEvent.SubagentDisplayName);
+        activity?.SetTag("copilot.model", copilotEvent.Model);
+        activity?.SetTag("copilot.tool.name", copilotEvent.ToolName);
+        activity?.SetTag("copilot.tool_call.id", copilotEvent.ToolCallId);
+        activity?.SetTag("copilot.duration_ms", copilotEvent.DurationMs);
+        activity?.SetTag("copilot.total_tokens", copilotEvent.TotalTokens);
+        activity?.SetTag("copilot.total_tool_calls", copilotEvent.TotalToolCalls);
+        activity?.SetTag("copilot.content.length", copilotEvent.ContentLength);
+        activity?.SetTag("copilot.content.sha256", copilotEvent.ContentSha256);
+        activity?.SetTag("copilot.tools", copilotEvent.Tools is { Count: > 0 } ? string.Join(", ", copilotEvent.Tools) : null);
+
+        if (!string.IsNullOrWhiteSpace(copilotEvent.ErrorMessage))
+        {
+            activity?.SetTag("error.type", "copilot.sdk.event");
+            activity?.SetTag("error.message", copilotEvent.ErrorMessage);
+            activity?.SetStatus(ActivityStatusCode.Error, copilotEvent.ErrorMessage);
+            return;
+        }
+
+        if (string.Equals(copilotEvent.Status, "failed", StringComparison.OrdinalIgnoreCase))
+        {
+            activity?.SetStatus(ActivityStatusCode.Error);
+            return;
+        }
+
+        activity?.SetStatus(ActivityStatusCode.Ok);
+    }
+
+    public string FormatCopilotSessionEvent(CopilotSessionTraceEvent copilotEvent)
+    {
+        var subject = copilotEvent.SubagentName
+            ?? copilotEvent.ToolName
+            ?? copilotEvent.SdkAgentId
+            ?? copilotEvent.RootAgentId
+            ?? "unknown";
+        var status = string.IsNullOrWhiteSpace(copilotEvent.Status) ? "observed" : copilotEvent.Status;
+        var safeContent = copilotEvent.ContentLength is null
+            ? string.Empty
+            : $", content length {copilotEvent.ContentLength}, sha256 {copilotEvent.ContentSha256}";
+        var error = string.IsNullOrWhiteSpace(copilotEvent.ErrorMessage)
+            ? string.Empty
+            : $", error: {copilotEvent.ErrorMessage}";
+
+        return $"{copilotEvent.EventType} {status} for {subject}{safeContent}{error}";
     }
 
     public void RecordIncidentTriggered(SimulatedIncident incident)
