@@ -32,6 +32,8 @@ Invoke-RestMethod -Method Post "$baseUrl/incidents/simulate?severity=Sev2&title=
 Invoke-RestMethod "$baseUrl/status"
 ```
 
+You can also open `maf-workflow.http`, replace `@mafWorkflowUrl` with the `maf-workflow` URL from the Aspire dashboard, and run the included `GET /status`, `GET /health`, and `POST /incidents/simulate` requests from an HTTP file client.
+
 The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. Running `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` still starts the original terminal demo; the AppHost path starts the API through Aspire endpoint configuration.
 
 ## What is included

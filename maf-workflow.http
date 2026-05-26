@@ -1,0 +1,14 @@
+# Replace this with the maf-workflow URL from the Aspire dashboard Resources page.
+@mafWorkflowUrl = http://localhost:5123
+
+### Workflow status
+GET {{mafWorkflowUrl}}/status
+
+### Health check
+GET {{mafWorkflowUrl}}/health
+
+### Trigger a simulated incident workflow
+POST {{mafWorkflowUrl}}/incidents/simulate?severity=Sev2&title=Database%20latency
+
+### Read status after triggering
+GET {{mafWorkflowUrl}}/status
