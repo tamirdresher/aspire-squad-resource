@@ -78,6 +78,7 @@ builder.AddProject<Projects.SquadInABox>("maf-workflow")
         commandName: "trigger-incident",
         commandOptions: new HttpCommandOptions
         {
+            Method = HttpMethod.Post,
             Description = "Calls POST /incidents/simulate to start the sample Real Squad workflow.",
             IconName = "Flash",
             IsHighlighted = true,
