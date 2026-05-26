@@ -114,7 +114,16 @@ This trace data provides visibility into the Squad workflow lifecycle, agent loa
 
 The same workflow also emits OpenTelemetry spans to the Aspire dashboard. In **Traces**, open the `maf-workflow` `real_squad.incident` trace and expand it to see one child span per loaded Squad agent, named `real_squad.agent.<agent-id>` with tags for the agent name, role, model, adapter status, and incident metadata.
 
-When live Copilot-backed agents are constructed and executed, the demo also wires `GitHub.Copilot.SDK` session hooks into OpenTelemetry. Copilot SDK events are emitted as spans named `real_squad.copilot.<event-type>` and as `CopilotSessionEvent` entries in `/trace`. These spans record safe metadata such as event type, root agent id, SDK agent id, subagent name, tool name, tool-call id, model, duration, token/tool counts, status, content length, and content SHA-256. They intentionally do **not** store raw prompts, assistant text, tool arguments, tool results, or private reasoning in Aspire traces.
+When live Copilot-backed agents are constructed and executed, the demo also wires `GitHub.Copilot.SDK` session hooks into OpenTelemetry. Copilot SDK events are emitted as spans named `real_squad.copilot.<event-type>` and as `CopilotSessionEvent` entries in `/trace`. These spans record safe metadata such as event type, root agent id, SDK agent id, subagent name, tool name, tool-call id, model, duration, token/tool counts, status, content length, and content SHA-256. By default, they intentionally do **not** store raw prompts, assistant text, tool arguments, tool results, or private reasoning in Aspire traces.
+
+For a local demo where you explicitly want to inspect the coordinator prompt/tool payloads and assistant/subagent responses, enable raw Copilot session tracing:
+
+```powershell
+$env:SQUAD_TRACE_RAW_COPILOT_CONTENT = "true"
+dotnet run --project .\src\Squad.Hosting.Aspire.Demo\Squad.Hosting.Aspire.Demo.csproj
+```
+
+Or pass `--trace-raw-copilot-content` to the `SquadInABox` workflow runner. In that mode, `/trace` includes raw SDK event details when the SDK exposes them (`rawToolArguments`, `rawToolResult`, `rawAssistantContent`, and `rawSubagentDescription`), and Aspire trace spans add corresponding `copilot.*.raw` tags. This is intentionally opt-in because those values can contain prompts, repo data, tool results, credentials, or other sensitive content. Private model reasoning is still not exposed unless the SDK itself surfaces it as event content.
 
 The default AppHost path is still the public-safe adapter proof path, so `nativeMafAgentsConstructed` is `0` unless you opt into live construction with Copilot authentication. The deeper `real_squad.copilot.*` spans appear only on live SDK sessions that actually produce session events; the top-level `real_squad.agent.*` spans appear in the safe path.
 

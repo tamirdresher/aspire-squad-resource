@@ -34,6 +34,9 @@ public static class RealSquadProgram
 
         var requestedAgentIds = ReadRepeatedOption(args, "--agent");
         var constructNativeAgents = args.Contains("--construct", StringComparer.OrdinalIgnoreCase);
+        var includeRawCopilotSessionContent =
+            args.Contains("--trace-raw-copilot-content", StringComparer.OrdinalIgnoreCase) ||
+            IsEnabled(Environment.GetEnvironmentVariable("SQUAD_TRACE_RAW_COPILOT_CONTENT"));
         var yoloMode = ReadYoloMode(args);
         var toolPolicyPath = Path.Combine(teamRoot, ".squad", "policies", "tool-allowlists.json");
         var toolName = ReadOption(args, "--tool");
@@ -53,6 +56,7 @@ public static class RealSquadProgram
                 ToolName: toolName,
                 TargetPath: targetPath,
                 AuditParameters: auditParameters,
+                IncludeRawCopilotSessionContent: includeRawCopilotSessionContent,
                 OnCopilotSessionEvent: onCopilotSessionEvent),
             requestedAgentIds.Count == 0 ? null : requestedAgentIds);
 
@@ -214,6 +218,13 @@ public static class RealSquadProgram
         }
 
         return values;
+    }
+
+    private static bool IsEnabled(string? value)
+    {
+        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void RejectUnsafePolicyBypassArgs(IReadOnlyList<string> args)

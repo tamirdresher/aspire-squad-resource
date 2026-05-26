@@ -6,7 +6,10 @@ namespace SquadInABox.RealSquad;
 
 public static class CopilotSessionTraceMapper
 {
-    public static CopilotSessionTraceEvent FromSessionEvent(string rootAgentId, SessionEvent sessionEvent)
+    public static CopilotSessionTraceEvent FromSessionEvent(
+        string rootAgentId,
+        SessionEvent sessionEvent,
+        bool includeRawContent = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootAgentId);
         ArgumentNullException.ThrowIfNull(sessionEvent);
@@ -29,7 +32,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "started",
                 ErrorMessage: null,
-                Tools: null),
+                Tools: null,
+                RawSubagentDescription: Raw(started.Data.AgentDescription, includeRawContent),
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null),
             SubagentCompletedEvent completed => new CopilotSessionTraceEvent(
                 EventType: completed.Type,
                 RootAgentId: rootAgentId,
@@ -46,7 +53,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "completed",
                 ErrorMessage: null,
-                Tools: null),
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null),
             SubagentFailedEvent failed => new CopilotSessionTraceEvent(
                 EventType: failed.Type,
                 RootAgentId: rootAgentId,
@@ -63,7 +74,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "failed",
                 ErrorMessage: failed.Data.Error,
-                Tools: null),
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null),
             SubagentSelectedEvent selected => new CopilotSessionTraceEvent(
                 EventType: selected.Type,
                 RootAgentId: rootAgentId,
@@ -80,7 +95,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "selected",
                 ErrorMessage: null,
-                Tools: selected.Data.Tools),
+                Tools: selected.Data.Tools,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null),
             SubagentDeselectedEvent deselected => new CopilotSessionTraceEvent(
                 EventType: deselected.Type,
                 RootAgentId: rootAgentId,
@@ -97,7 +116,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "deselected",
                 ErrorMessage: null,
-                Tools: null),
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null),
             ToolExecutionStartEvent toolStart => new CopilotSessionTraceEvent(
                 EventType: toolStart.Type,
                 RootAgentId: rootAgentId,
@@ -114,7 +137,11 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: "started",
                 ErrorMessage: null,
-                Tools: null),
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: Raw(toolStart.Data.Arguments, includeRawContent),
+                RawToolResult: null,
+                RawAssistantContent: null),
             ToolExecutionCompleteEvent toolComplete => new CopilotSessionTraceEvent(
                 EventType: toolComplete.Type,
                 RootAgentId: rootAgentId,
@@ -131,9 +158,13 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: toolComplete.Data.Success ? "completed" : "failed",
                 ErrorMessage: toolComplete.Data.Error?.ToString(),
-                Tools: null),
-            AssistantMessageEvent assistant => CreateAssistantEvent(rootAgentId, assistant),
-            AssistantMessageDeltaEvent assistantDelta => CreateAssistantDeltaEvent(rootAgentId, assistantDelta),
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: Raw(toolComplete.Data.Result, includeRawContent),
+                RawAssistantContent: null),
+            AssistantMessageEvent assistant => CreateAssistantEvent(rootAgentId, assistant, includeRawContent),
+            AssistantMessageDeltaEvent assistantDelta => CreateAssistantDeltaEvent(rootAgentId, assistantDelta, includeRawContent),
             _ => new CopilotSessionTraceEvent(
                 EventType: sessionEvent.Type,
                 RootAgentId: rootAgentId,
@@ -150,11 +181,18 @@ public static class CopilotSessionTraceMapper
                 ContentSha256: null,
                 Status: null,
                 ErrorMessage: null,
-                Tools: null)
+                Tools: null,
+                RawSubagentDescription: null,
+                RawToolArguments: null,
+                RawToolResult: null,
+                RawAssistantContent: null)
         };
     }
 
-    private static CopilotSessionTraceEvent CreateAssistantEvent(string rootAgentId, AssistantMessageEvent assistant)
+    private static CopilotSessionTraceEvent CreateAssistantEvent(
+        string rootAgentId,
+        AssistantMessageEvent assistant,
+        bool includeRawContent)
     {
         var content = assistant.Data.Content;
         return new CopilotSessionTraceEvent(
@@ -173,10 +211,17 @@ public static class CopilotSessionTraceMapper
             ContentSha256: Hash(content),
             Status: assistant.Data.Phase,
             ErrorMessage: null,
-            Tools: null);
+            Tools: null,
+            RawSubagentDescription: null,
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: Raw(content, includeRawContent));
     }
 
-    private static CopilotSessionTraceEvent CreateAssistantDeltaEvent(string rootAgentId, AssistantMessageDeltaEvent assistantDelta)
+    private static CopilotSessionTraceEvent CreateAssistantDeltaEvent(
+        string rootAgentId,
+        AssistantMessageDeltaEvent assistantDelta,
+        bool includeRawContent)
     {
         var content = assistantDelta.Data.DeltaContent;
         return new CopilotSessionTraceEvent(
@@ -195,7 +240,21 @@ public static class CopilotSessionTraceMapper
             ContentSha256: Hash(content),
             Status: null,
             ErrorMessage: null,
-            Tools: null);
+            Tools: null,
+            RawSubagentDescription: null,
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: Raw(content, includeRawContent));
+    }
+
+    private static string? Raw(object? value, bool includeRawContent)
+    {
+        if (!includeRawContent || value is null)
+        {
+            return null;
+        }
+
+        return value.ToString();
     }
 
     private static string? Hash(string? value)

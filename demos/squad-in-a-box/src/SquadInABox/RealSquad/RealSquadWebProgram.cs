@@ -395,7 +395,11 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
                     copilotEvent =>
                     {
                         _telemetry.RecordCopilotSessionEvent(incident, copilotEvent);
-                        _traceStore.AddEvent(runId, "CopilotSessionEvent", _telemetry.FormatCopilotSessionEvent(copilotEvent));
+                        _traceStore.AddEvent(
+                            runId,
+                            "CopilotSessionEvent",
+                            _telemetry.FormatCopilotSessionEvent(copilotEvent),
+                            _telemetry.CreateCopilotSessionEventDetails(copilotEvent));
                         _logger.LogInformation(
                             "Copilot SDK event observed for root agent {RootAgentId}: {EventType} status {EventStatus}, subagent {SubagentName}, tool {ToolName}.",
                             copilotEvent.RootAgentId,
@@ -513,6 +517,10 @@ public sealed class RealSquadTelemetry : IDisposable
         activity?.SetTag("copilot.content.length", copilotEvent.ContentLength);
         activity?.SetTag("copilot.content.sha256", copilotEvent.ContentSha256);
         activity?.SetTag("copilot.tools", copilotEvent.Tools is { Count: > 0 } ? string.Join(", ", copilotEvent.Tools) : null);
+        activity?.SetTag("copilot.subagent.description.raw", copilotEvent.RawSubagentDescription);
+        activity?.SetTag("copilot.tool.arguments.raw", copilotEvent.RawToolArguments);
+        activity?.SetTag("copilot.tool.result.raw", copilotEvent.RawToolResult);
+        activity?.SetTag("copilot.assistant.content.raw", copilotEvent.RawAssistantContent);
 
         if (!string.IsNullOrWhiteSpace(copilotEvent.ErrorMessage))
         {
@@ -547,6 +555,44 @@ public sealed class RealSquadTelemetry : IDisposable
             : $", error: {copilotEvent.ErrorMessage}";
 
         return $"{copilotEvent.EventType} {status} for {subject}{safeContent}{error}";
+    }
+
+    public IReadOnlyDictionary<string, string>? CreateCopilotSessionEventDetails(CopilotSessionTraceEvent copilotEvent)
+    {
+        var details = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["eventType"] = copilotEvent.EventType
+        };
+
+        AddIfPresent(details, "status", copilotEvent.Status);
+        AddIfPresent(details, "rootAgentId", copilotEvent.RootAgentId);
+        AddIfPresent(details, "sdkAgentId", copilotEvent.SdkAgentId);
+        AddIfPresent(details, "subagentName", copilotEvent.SubagentName);
+        AddIfPresent(details, "subagentDisplayName", copilotEvent.SubagentDisplayName);
+        AddIfPresent(details, "model", copilotEvent.Model);
+        AddIfPresent(details, "toolName", copilotEvent.ToolName);
+        AddIfPresent(details, "toolCallId", copilotEvent.ToolCallId);
+        AddIfPresent(details, "durationMs", copilotEvent.DurationMs?.ToString("F2"));
+        AddIfPresent(details, "totalTokens", copilotEvent.TotalTokens?.ToString("F0"));
+        AddIfPresent(details, "totalToolCalls", copilotEvent.TotalToolCalls?.ToString("F0"));
+        AddIfPresent(details, "contentLength", copilotEvent.ContentLength?.ToString());
+        AddIfPresent(details, "contentSha256", copilotEvent.ContentSha256);
+        AddIfPresent(details, "tools", copilotEvent.Tools is { Count: > 0 } ? string.Join(", ", copilotEvent.Tools) : null);
+        AddIfPresent(details, "rawSubagentDescription", copilotEvent.RawSubagentDescription);
+        AddIfPresent(details, "rawToolArguments", copilotEvent.RawToolArguments);
+        AddIfPresent(details, "rawToolResult", copilotEvent.RawToolResult);
+        AddIfPresent(details, "rawAssistantContent", copilotEvent.RawAssistantContent);
+        AddIfPresent(details, "errorMessage", copilotEvent.ErrorMessage);
+
+        return details.Count == 1 ? null : details;
+    }
+
+    private static void AddIfPresent(IDictionary<string, string> details, string key, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            details[key] = value;
+        }
     }
 
     public void RecordIncidentTriggered(SimulatedIncident incident)
@@ -598,10 +644,14 @@ public sealed class WorkflowRunTraceStore
     private readonly ConcurrentDictionary<string, WorkflowRunTrace> _traces = new();
     private const int MaxTracesPerRun = 100;
 
-    public void AddEvent(string runId, string eventType, string message)
+    public void AddEvent(
+        string runId,
+        string eventType,
+        string message,
+        IReadOnlyDictionary<string, string>? details = null)
     {
         var trace = _traces.GetOrAdd(runId, _ => new WorkflowRunTrace(runId));
-        trace.AddEvent(eventType, message);
+        trace.AddEvent(eventType, message, details);
     }
 
     public object GetAllTraces()
@@ -617,7 +667,8 @@ public sealed class WorkflowRunTraceStore
                 {
                     timestamp = e.Timestamp,
                     eventType = e.EventType,
-                    message = e.Message
+                    message = e.Message,
+                    details = e.Details
                 })
             })
             .ToList();
@@ -648,7 +699,8 @@ public sealed class WorkflowRunTraceStore
                 {
                     timestamp = e.Timestamp,
                     eventType = e.EventType,
-                    message = e.Message
+                    message = e.Message,
+                    details = e.Details
                 })
         };
     }
@@ -668,22 +720,24 @@ public sealed class WorkflowRunTrace
     public DateTime StartedAt { get; }
     public IReadOnlyCollection<WorkflowTraceEvent> Events => _events.ToArray();
 
-    public void AddEvent(string eventType, string message)
+    public void AddEvent(string eventType, string message, IReadOnlyDictionary<string, string>? details = null)
     {
-        _events.Enqueue(new WorkflowTraceEvent(eventType, message));
+        _events.Enqueue(new WorkflowTraceEvent(eventType, message, details));
     }
 }
 
 public sealed class WorkflowTraceEvent
 {
-    public WorkflowTraceEvent(string eventType, string message)
+    public WorkflowTraceEvent(string eventType, string message, IReadOnlyDictionary<string, string>? details)
     {
         Timestamp = DateTime.UtcNow;
         EventType = eventType;
         Message = message;
+        Details = details;
     }
 
     public DateTime Timestamp { get; }
     public string EventType { get; }
     public string Message { get; }
+    public IReadOnlyDictionary<string, string>? Details { get; }
 }

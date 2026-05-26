@@ -13,6 +13,7 @@ public sealed record SquadRuntimeOptions(
     string? ToolName,
     string? TargetPath,
     IReadOnlyDictionary<string, string> AuditParameters,
+    bool IncludeRawCopilotSessionContent,
     Action<CopilotSessionTraceEvent>? OnCopilotSessionEvent = null)
 {
     public string SquadRoot => Path.Combine(TeamRoot, ".squad");
@@ -39,4 +40,8 @@ public sealed record CopilotSessionTraceEvent(
     string? ContentSha256,
     string? Status,
     string? ErrorMessage,
-    IReadOnlyList<string>? Tools);
+    IReadOnlyList<string>? Tools,
+    string? RawSubagentDescription,
+    string? RawToolArguments,
+    string? RawToolResult,
+    string? RawAssistantContent);

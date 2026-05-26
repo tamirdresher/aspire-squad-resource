@@ -68,7 +68,10 @@ public sealed class SquadAgentFactory
             },
             WorkingDirectory = options.TeamRoot,
             OnEvent = sessionEvent => options.OnCopilotSessionEvent?.Invoke(
-                CopilotSessionTraceMapper.FromSessionEvent(definition.Id, sessionEvent))
+                CopilotSessionTraceMapper.FromSessionEvent(
+                    definition.Id,
+                    sessionEvent,
+                    options.IncludeRawCopilotSessionContent))
         };
 
         var client = new CopilotClient(clientOptions);
