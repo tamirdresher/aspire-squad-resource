@@ -1,4 +1,5 @@
 using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 
 // Squad.Hosting.Aspire.Demo - AppHost
 // Demonstrates Squad as a first-class .NET Aspire resource.
@@ -33,7 +34,54 @@ var mafSquad = builder.AddSquad("maf-squad",
 builder.AddProject<Projects.SquadInABox>("maf-workflow")
     .WithReference(mafSquad)
     .WithArgs("--team-root", sampleSquadRoot)
-    .WithHttpEndpoint(name: "http", env: "HTTP_PORTS");
+    .WithHttpEndpoint(name: "http", env: "HTTP_PORTS")
+    .WithHttpCommand(
+        path: "/",
+        displayName: "Show Snapshot",
+        endpointName: "http",
+        commandName: "show-snapshot",
+        commandOptions: new HttpCommandOptions
+        {
+            Method = HttpMethod.Get,
+            Description = "Calls GET / and reports the current workflow snapshot.",
+            IconName = "DocumentData",
+            IsHighlighted = true,
+        })
+    .WithHttpCommand(
+        path: "/status",
+        displayName: "Check Status",
+        endpointName: "http",
+        commandName: "check-status",
+        commandOptions: new HttpCommandOptions
+        {
+            Method = HttpMethod.Get,
+            Description = "Calls GET /status and reports the current workflow status.",
+            IconName = "Pulse",
+            IsHighlighted = true,
+        })
+    .WithHttpCommand(
+        path: "/health",
+        displayName: "Check Health",
+        endpointName: "http",
+        commandName: "check-health",
+        commandOptions: new HttpCommandOptions
+        {
+            Method = HttpMethod.Get,
+            Description = "Calls GET /health on the workflow API.",
+            IconName = "HeartPulse",
+            IsHighlighted = true,
+        })
+    .WithHttpCommand(
+        path: "/incidents/simulate",
+        displayName: "Trigger Incident",
+        endpointName: "http",
+        commandName: "trigger-incident",
+        commandOptions: new HttpCommandOptions
+        {
+            Description = "Calls POST /incidents/simulate to start the sample Real Squad workflow.",
+            IconName = "Flash",
+            IsHighlighted = true,
+        });
 
 if (!string.IsNullOrWhiteSpace(upstreamSquadRoot) && Directory.Exists(upstreamSquadRoot))
 {

@@ -23,8 +23,9 @@ The runnable ASP.NET Core API is the `maf-workflow` project resource. It has an 
 
 1. Open the **Resources** page.
 2. Find the `maf-workflow` row.
-3. Use its endpoint link in the **Urls** column to open the workflow status JSON (`/status` is also available).
-4. Trigger the sample incident with:
+3. Use its endpoint link in the **Urls** column to open the workflow snapshot JSON (`/status` is also available).
+4. Use the `maf-workflow` **Actions** menu to run **Show Snapshot**, **Check Status**, **Check Health**, or **Trigger Incident** directly from the dashboard.
+5. Or trigger the sample incident from PowerShell with:
 
 ```powershell
 $baseUrl = "<maf-workflow url from the Aspire dashboard>"
@@ -32,7 +33,7 @@ Invoke-RestMethod -Method Post "$baseUrl/incidents/simulate?severity=Sev2&title=
 Invoke-RestMethod "$baseUrl/status"
 ```
 
-You can also open `maf-workflow.http`, replace `@mafWorkflowUrl` with the `maf-workflow` URL from the Aspire dashboard, and run the included `GET /status`, `GET /health`, and `POST /incidents/simulate` requests from an HTTP file client.
+You can also open `maf-workflow.http`, replace `@mafWorkflowUrl` with the `maf-workflow` URL from the Aspire dashboard, and run the included `GET /`, `GET /status`, `GET /health`, and `POST /incidents/simulate` requests from an HTTP file client.
 
 The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. Running `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` still starts the original terminal demo; the AppHost path starts the API through Aspire endpoint configuration.
 

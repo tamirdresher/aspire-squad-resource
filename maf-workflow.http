@@ -1,6 +1,9 @@
 # Replace this with the maf-workflow URL from the Aspire dashboard Resources page.
 @mafWorkflowUrl = http://localhost:5123
 
+### Workflow snapshot
+GET {{mafWorkflowUrl}}/
+
 ### Workflow status
 GET {{mafWorkflowUrl}}/status
 
