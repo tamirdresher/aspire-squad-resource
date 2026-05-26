@@ -361,8 +361,9 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
 
             try
             {
+                var runnerArgs = BuildRunnerArgs(_state.Args, incident);
                 var exitCode = await RealSquadProgram.RunAsync(
-                    _state.Args,
+                    runnerArgs,
                     description =>
                     {
                         var observation = RealSquadObservation.From(description);
@@ -455,6 +456,38 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
             }
         }
     }
+
+    private static string[] BuildRunnerArgs(string[] baseArgs, SimulatedIncident incident)
+    {
+        var args = new List<string>(baseArgs);
+        if (!ContainsOption(args, "--prompt"))
+        {
+            args.Add("--prompt");
+            args.Add(CreateIncidentPrompt(incident));
+        }
+
+        return args.ToArray();
+    }
+
+    private static bool ContainsOption(IReadOnlyList<string> args, string option)
+    {
+        return args.Any(arg => string.Equals(arg, option, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string CreateIncidentPrompt(SimulatedIncident incident)
+    {
+        return $"""
+            You are the Deep Space Nine incident Squad coordinator running inside the Aspire Squad Resource demo.
+
+            Incident:
+            - Id: {incident.Id}
+            - Severity: {incident.Severity}
+            - Title: {incident.Title}
+            - TriggeredAtUtc: {incident.TriggeredAt:O}
+
+            Route this live incident using the configured .squad custom agents. Spawn the most relevant subagents for incident command, observability diagnostics, platform, database reliability, security, and communications as needed. Ask each spawned subagent for its first response and summarize the handoff, evidence requested, immediate mitigation plan, and next status update. Keep the run safe: do not modify files or external systems.
+            """;
+    }
 }
 
 public sealed class RealSquadTelemetry : IDisposable
@@ -514,6 +547,7 @@ public sealed class RealSquadTelemetry : IDisposable
         activity?.SetTag("copilot.duration_ms", copilotEvent.DurationMs);
         activity?.SetTag("copilot.total_tokens", copilotEvent.TotalTokens);
         activity?.SetTag("copilot.total_tool_calls", copilotEvent.TotalToolCalls);
+        activity?.SetTag("copilot.response_update_count", copilotEvent.ResponseUpdateCount);
         activity?.SetTag("copilot.content.length", copilotEvent.ContentLength);
         activity?.SetTag("copilot.content.sha256", copilotEvent.ContentSha256);
         activity?.SetTag("copilot.tools", copilotEvent.Tools is { Count: > 0 } ? string.Join(", ", copilotEvent.Tools) : null);
@@ -521,6 +555,7 @@ public sealed class RealSquadTelemetry : IDisposable
         activity?.SetTag("copilot.tool.arguments.raw", copilotEvent.RawToolArguments);
         activity?.SetTag("copilot.tool.result.raw", copilotEvent.RawToolResult);
         activity?.SetTag("copilot.assistant.content.raw", copilotEvent.RawAssistantContent);
+        activity?.SetTag("copilot.user.prompt.raw", copilotEvent.RawUserPrompt);
 
         if (!string.IsNullOrWhiteSpace(copilotEvent.ErrorMessage))
         {
@@ -575,6 +610,7 @@ public sealed class RealSquadTelemetry : IDisposable
         AddIfPresent(details, "durationMs", copilotEvent.DurationMs?.ToString("F2"));
         AddIfPresent(details, "totalTokens", copilotEvent.TotalTokens?.ToString("F0"));
         AddIfPresent(details, "totalToolCalls", copilotEvent.TotalToolCalls?.ToString("F0"));
+        AddIfPresent(details, "responseUpdateCount", copilotEvent.ResponseUpdateCount?.ToString());
         AddIfPresent(details, "contentLength", copilotEvent.ContentLength?.ToString());
         AddIfPresent(details, "contentSha256", copilotEvent.ContentSha256);
         AddIfPresent(details, "tools", copilotEvent.Tools is { Count: > 0 } ? string.Join(", ", copilotEvent.Tools) : null);
@@ -582,6 +618,7 @@ public sealed class RealSquadTelemetry : IDisposable
         AddIfPresent(details, "rawToolArguments", copilotEvent.RawToolArguments);
         AddIfPresent(details, "rawToolResult", copilotEvent.RawToolResult);
         AddIfPresent(details, "rawAssistantContent", copilotEvent.RawAssistantContent);
+        AddIfPresent(details, "rawUserPrompt", copilotEvent.RawUserPrompt);
         AddIfPresent(details, "errorMessage", copilotEvent.ErrorMessage);
 
         return details.Count == 1 ? null : details;

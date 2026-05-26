@@ -1,4 +1,5 @@
 using GitHub.Copilot.SDK;
+using Microsoft.Agents.AI;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,6 +7,20 @@ namespace SquadInABox.RealSquad;
 
 public static class CopilotSessionTraceMapper
 {
+    public static bool ShouldEmitSessionEvent(SessionEvent sessionEvent)
+    {
+        ArgumentNullException.ThrowIfNull(sessionEvent);
+
+        return sessionEvent switch
+        {
+            AssistantMessageDeltaEvent => false,
+            AssistantReasoningDeltaEvent => false,
+            ToolExecutionProgressEvent => false,
+            ToolExecutionPartialResultEvent => false,
+            _ => true
+        };
+    }
+
     public static CopilotSessionTraceEvent FromSessionEvent(
         string rootAgentId,
         SessionEvent sessionEvent,
@@ -187,6 +202,106 @@ public static class CopilotSessionTraceMapper
                 RawToolResult: null,
                 RawAssistantContent: null)
         };
+    }
+
+    public static CopilotSessionTraceEvent FromAgentResponseUpdate(
+        string rootAgentId,
+        AgentResponseUpdate update,
+        bool includeRawContent = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootAgentId);
+        ArgumentNullException.ThrowIfNull(update);
+
+        var content = update.Text;
+        return new CopilotSessionTraceEvent(
+            EventType: "agent.response.update",
+            RootAgentId: rootAgentId,
+            SdkAgentId: update.AgentId,
+            SubagentName: update.AuthorName,
+            SubagentDisplayName: update.AuthorName,
+            Model: null,
+            ToolName: null,
+            ToolCallId: null,
+            DurationMs: null,
+            TotalTokens: null,
+            TotalToolCalls: null,
+            ContentLength: string.IsNullOrEmpty(content) ? null : content.Length,
+            ContentSha256: Hash(content),
+            Status: update.FinishReason?.ToString(),
+            ErrorMessage: null,
+            Tools: null,
+            RawSubagentDescription: null,
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: Raw(content, includeRawContent));
+    }
+
+    public static CopilotSessionTraceEvent FromAgentResponseSummary(
+        string rootAgentId,
+        string? sdkAgentId,
+        string? authorName,
+        string content,
+        int updateCount,
+        string? finishReason,
+        bool includeRawContent = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootAgentId);
+        ArgumentNullException.ThrowIfNull(content);
+
+        return new CopilotSessionTraceEvent(
+            EventType: "agent.response.summary",
+            RootAgentId: rootAgentId,
+            SdkAgentId: sdkAgentId,
+            SubagentName: authorName,
+            SubagentDisplayName: authorName,
+            Model: null,
+            ToolName: null,
+            ToolCallId: null,
+            DurationMs: null,
+            TotalTokens: null,
+            TotalToolCalls: null,
+            ContentLength: content.Length,
+            ContentSha256: Hash(content),
+            Status: string.IsNullOrWhiteSpace(finishReason) ? "completed" : finishReason,
+            ErrorMessage: null,
+            Tools: null,
+            RawSubagentDescription: null,
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: Raw(content, includeRawContent),
+            ResponseUpdateCount: updateCount);
+    }
+
+    public static CopilotSessionTraceEvent FromUserPrompt(
+        string rootAgentId,
+        string prompt,
+        bool includeRawContent = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootAgentId);
+        ArgumentNullException.ThrowIfNull(prompt);
+
+        return new CopilotSessionTraceEvent(
+            EventType: "session.user_prompt",
+            RootAgentId: rootAgentId,
+            SdkAgentId: rootAgentId,
+            SubagentName: null,
+            SubagentDisplayName: null,
+            Model: null,
+            ToolName: null,
+            ToolCallId: null,
+            DurationMs: null,
+            TotalTokens: null,
+            TotalToolCalls: null,
+            ContentLength: prompt.Length,
+            ContentSha256: Hash(prompt),
+            Status: "submitted",
+            ErrorMessage: null,
+            Tools: null,
+            RawSubagentDescription: null,
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: null,
+            RawUserPrompt: Raw(prompt, includeRawContent));
     }
 
     private static CopilotSessionTraceEvent CreateAssistantEvent(

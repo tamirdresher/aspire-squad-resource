@@ -62,7 +62,14 @@ public static class SquadBuilderExtensions
         // Register the event subscriber (idempotent: only one singleton).
         builder.Services.TryAddEventingSubscriber<SquadLifecycleHook>();
 
-        var resourceBuilder = builder.AddResource(resource);
+        var resourceBuilder = builder.AddResource(resource)
+            .WithInitialState(new CustomResourceSnapshot
+            {
+                ResourceType = "Squad",
+                CreationTimeStamp = DateTime.UtcNow,
+                State = new ResourceStateSnapshot("Configured", KnownResourceStateStyles.Info),
+                Properties = [..SquadDashboardProperties.CreateStatic(resource)],
+            });
 
         // Dashboard commands.
         // These commands appear as buttons in the Aspire dashboard "Commands"

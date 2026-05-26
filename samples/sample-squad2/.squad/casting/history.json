@@ -1,0 +1,28 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Star Trek: Deep Space Nine",
+      "assigned_at": "2026-05-26",
+      "agent_count": 10
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-05-26-deep-space-nine-incident-squad": {
+      "assigned_at": "2026-05-26",
+      "project": "sample-squad2",
+      "universe": "Star Trek: Deep Space Nine",
+      "agents": [
+        "sisko",
+        "kira",
+        "dax",
+        "bashir",
+        "worf",
+        "odo",
+        "obrien",
+        "rom",
+        "nog",
+        "quark"
+      ]
+    }
+  }
+}

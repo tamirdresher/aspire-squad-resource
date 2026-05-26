@@ -30,11 +30,18 @@ public sealed class SquadAgentFactory
             NativeAgent: nativeAgent);
     }
 
-    private static GitHubCopilotAgent CreateNativeAgent(
+    private static RealSquadMafAgent CreateNativeAgent(
         SquadAgentDefinition definition,
         SquadRuntimeOptions options,
         IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)
     {
+        return new RealSquadMafAgent(definition, options, customAgentDefinitions);
+    }
+
+    public static CopilotClientOptions CreateClientOptions(SquadRuntimeOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
         var clientOptions = new CopilotClientOptions
         {
             AutoStart = false,
@@ -43,13 +50,33 @@ public sealed class SquadAgentFactory
             UseLoggedInUser = string.IsNullOrWhiteSpace(options.GitHubToken)
         };
 
-        var sessionConfig = new SessionConfig
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            clientOptions.Telemetry = new TelemetryConfig { OtlpEndpoint = otlpEndpoint };
+        }
+
+        return clientOptions;
+    }
+
+    public static SessionConfig CreateSessionConfig(
+        SquadAgentDefinition definition,
+        SquadRuntimeOptions options,
+        IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions,
+        SessionEventHandler? onEvent)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(customAgentDefinitions);
+
+        return new SessionConfig
         {
             ClientName = $"SquadInABox.RealSquad.{definition.Id}",
             ConfigDir = options.SquadRoot,
             EnableConfigDiscovery = true,
             GitHubToken = string.IsNullOrWhiteSpace(options.GitHubToken) ? null : options.GitHubToken,
             Model = options.Model,
+            OnPermissionRequest = PermissionHandler.ApproveAll,
             Streaming = true,
             IncludeSubAgentStreamingEvents = true,
             Agent = definition.Id,
@@ -59,7 +86,8 @@ public sealed class SquadAgentFactory
                     Name = agent.Id,
                     DisplayName = agent.Name,
                     Description = agent.Description,
-                    Prompt = agent.SystemPrompt
+                    Prompt = agent.SystemPrompt,
+                    Infer = true
                 })
                 .ToArray(),
             SystemMessage = new SystemMessageConfig
@@ -67,20 +95,7 @@ public sealed class SquadAgentFactory
                 Content = definition.SystemPrompt
             },
             WorkingDirectory = options.TeamRoot,
-            OnEvent = sessionEvent => options.OnCopilotSessionEvent?.Invoke(
-                CopilotSessionTraceMapper.FromSessionEvent(
-                    definition.Id,
-                    sessionEvent,
-                    options.IncludeRawCopilotSessionContent))
+            OnEvent = onEvent
         };
-
-        var client = new CopilotClient(clientOptions);
-        return new GitHubCopilotAgent(
-            client,
-            sessionConfig,
-            true,
-            definition.Id,
-            definition.Name,
-            definition.Description);
     }
 }

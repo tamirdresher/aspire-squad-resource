@@ -44,4 +44,6 @@ public sealed record CopilotSessionTraceEvent(
     string? RawSubagentDescription,
     string? RawToolArguments,
     string? RawToolResult,
-    string? RawAssistantContent);
+    string? RawAssistantContent,
+    string? RawUserPrompt = null,
+    int? ResponseUpdateCount = null);

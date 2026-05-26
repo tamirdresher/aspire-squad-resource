@@ -1,4 +1,7 @@
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Spectre.Console;
+using System.Text;
 
 namespace SquadInABox.RealSquad;
 
@@ -41,12 +44,12 @@ public static class RealSquadProgram
         var toolPolicyPath = Path.Combine(teamRoot, ".squad", "policies", "tool-allowlists.json");
         var toolName = ReadOption(args, "--tool");
         var targetPath = ReadOption(args, "--target-path");
+        var prompt = ReadOption(args, "--prompt");
         var auditParameters = ReadKeyValueOptions(args, "--audit-param");
         var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 
         var runtime = new SquadRuntime(loader, new SquadAgentFactory(), new SquadPolicyEvaluator());
-        var description = runtime.Describe(
-            new SquadRuntimeOptions(
+        var runtimeOptions = new SquadRuntimeOptions(
                 TeamRoot: teamRoot,
                 Model: model,
                 GitHubToken: token,
@@ -57,11 +60,19 @@ public static class RealSquadProgram
                 TargetPath: targetPath,
                 AuditParameters: auditParameters,
                 IncludeRawCopilotSessionContent: includeRawCopilotSessionContent,
-                OnCopilotSessionEvent: onCopilotSessionEvent),
+                OnCopilotSessionEvent: onCopilotSessionEvent);
+
+        var description = runtime.Describe(
+            runtimeOptions,
             requestedAgentIds.Count == 0 ? null : requestedAgentIds);
 
         onDescriptionCreated?.Invoke(description);
         Render(description);
+
+        if (!string.IsNullOrWhiteSpace(prompt))
+        {
+            await RunLivePromptAsync(description, runtimeOptions, prompt, includeRawCopilotSessionContent, onCopilotSessionEvent);
+        }
 
         foreach (var agent in description.Agents)
         {
@@ -69,6 +80,55 @@ public static class RealSquadProgram
         }
 
         return 0;
+    }
+
+    private static async Task RunLivePromptAsync(
+        SquadRuntimeDescription description,
+        SquadRuntimeOptions runtimeOptions,
+        string prompt,
+        bool includeRawCopilotSessionContent,
+        Action<CopilotSessionTraceEvent>? onCopilotSessionEvent)
+    {
+        var coordinator = SelectCoordinator(description);
+        if (coordinator.NativeAgent is not AIAgent coordinatorAgent)
+        {
+            throw new InvalidOperationException(
+                $"Live prompt execution requires --construct so {coordinator.Definition.Id} is a real MAF AIAgent.");
+        }
+
+        AnsiConsole.Write(new Rule($"[bold cyan1]Live Copilot-backed run: {Markup.Escape(coordinator.Definition.Name)}[/]"));
+        AnsiConsole.MarkupLine($"[bold]Root agent:[/] {Markup.Escape(coordinator.Definition.Id)} ({Markup.Escape(coordinator.Definition.Role)})");
+        AnsiConsole.MarkupLine($"[bold]Prompt length:[/] {prompt.Length}");
+
+        onCopilotSessionEvent?.Invoke(
+            CopilotSessionTraceMapper.FromUserPrompt(
+                coordinator.Definition.Id,
+                prompt,
+                includeRawCopilotSessionContent));
+
+        var responseCollector = new AgentResponseUpdateCollector(coordinator.Definition.Id, includeRawCopilotSessionContent);
+        await foreach (var update in coordinatorAgent.RunStreamingAsync([new ChatMessage(ChatRole.User, prompt)]))
+        {
+            responseCollector.Add(update);
+            if (!string.IsNullOrEmpty(update.Text))
+            {
+                AnsiConsole.Write(Markup.Escape(update.Text));
+            }
+        }
+
+        AnsiConsole.WriteLine();
+        foreach (var responseEvent in responseCollector.CreateSummaryEvents())
+        {
+            onCopilotSessionEvent?.Invoke(responseEvent);
+        }
+    }
+
+    private static CopilotBackedMafAgent SelectCoordinator(SquadRuntimeDescription description)
+    {
+        return description.Agents.FirstOrDefault(agent => string.Equals(agent.Definition.Id, "sisko", StringComparison.OrdinalIgnoreCase)) ??
+            description.Agents.FirstOrDefault(agent => agent.Definition.Role.Contains("lead", StringComparison.OrdinalIgnoreCase)) ??
+            description.Agents.FirstOrDefault() ??
+            throw new InvalidOperationException("Live prompt execution requires at least one Squad agent.");
     }
 
     private static void Render(SquadRuntimeDescription description)
@@ -253,6 +313,89 @@ public static class RealSquadProgram
                 {
                     throw new InvalidOperationException($"Unsafe policy bypass configuration is rejected: {Markup.Escape(arg)}");
                 }
+            }
+        }
+    }
+
+    private sealed class AgentResponseUpdateCollector
+    {
+        private readonly string _rootAgentId;
+        private readonly bool _includeRawContent;
+        private readonly Dictionary<string, ResponseBuffer> _responses = new(StringComparer.OrdinalIgnoreCase);
+
+        public AgentResponseUpdateCollector(string rootAgentId, bool includeRawContent)
+        {
+            _rootAgentId = rootAgentId;
+            _includeRawContent = includeRawContent;
+        }
+
+        public void Add(AgentResponseUpdate update)
+        {
+            var key = update.AgentId ?? update.AuthorName ?? _rootAgentId;
+            if (!_responses.TryGetValue(key, out var buffer))
+            {
+                buffer = new ResponseBuffer(update.AgentId, update.AuthorName);
+                _responses[key] = buffer;
+            }
+
+            buffer.Add(update);
+        }
+
+        public IEnumerable<CopilotSessionTraceEvent> CreateSummaryEvents()
+        {
+            foreach (var buffer in _responses.Values)
+            {
+                var content = buffer.Content;
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    continue;
+                }
+
+                yield return CopilotSessionTraceMapper.FromAgentResponseSummary(
+                    _rootAgentId,
+                    buffer.AgentId,
+                    buffer.AuthorName,
+                    content,
+                    buffer.UpdateCount,
+                    buffer.FinishReason,
+                    _includeRawContent);
+            }
+        }
+    }
+
+    private sealed class ResponseBuffer
+    {
+        private readonly StringBuilder _content = new();
+
+        public ResponseBuffer(string? agentId, string? authorName)
+        {
+            AgentId = agentId;
+            AuthorName = authorName;
+        }
+
+        public string? AgentId { get; private set; }
+
+        public string? AuthorName { get; private set; }
+
+        public int UpdateCount { get; private set; }
+
+        public string? FinishReason { get; private set; }
+
+        public string Content => _content.ToString();
+
+        public void Add(AgentResponseUpdate update)
+        {
+            AgentId ??= update.AgentId;
+            AuthorName ??= update.AuthorName;
+            UpdateCount++;
+            if (update.FinishReason is not null)
+            {
+                FinishReason = update.FinishReason.ToString();
+            }
+
+            if (!string.IsNullOrEmpty(update.Text))
+            {
+                _content.Append(update.Text);
             }
         }
     }

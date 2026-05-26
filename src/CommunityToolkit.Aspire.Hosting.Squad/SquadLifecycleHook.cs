@@ -84,13 +84,7 @@ internal sealed class SquadLifecycleHook : IDistributedApplicationEventingSubscr
             await _notifications.PublishUpdateAsync(squad, s => s with
             {
                 State = new ResourceStateSnapshot(StateSpawning, KnownResourceStateStyles.Info),
-                Properties =
-                [
-                    new ResourcePropertySnapshot("squad.teamRoot", squad.TeamRoot),
-                    new ResourcePropertySnapshot("squad.agents", string.Join(", ", squad.Agents)),
-                    new ResourcePropertySnapshot("squad.protocol", "maf-1.0"),
-                    ..ReadTeamProperties(squad),
-                ]
+                Properties = [..ReadTeamProperties(squad)],
             });
 
             _logger.LogInformation(
@@ -113,13 +107,7 @@ internal sealed class SquadLifecycleHook : IDistributedApplicationEventingSubscr
             await _notifications.PublishUpdateAsync(squad, s => s with
             {
                 State = new ResourceStateSnapshot(StateActive, KnownResourceStateStyles.Success),
-                Properties =
-                [
-                    new ResourcePropertySnapshot("squad.teamRoot", squad.TeamRoot),
-                    new ResourcePropertySnapshot("squad.agents", string.Join(", ", squad.Agents)),
-                    new ResourcePropertySnapshot("squad.protocol", "maf-1.0"),
-                    ..ReadTeamProperties(squad),
-                ]
+                Properties = [..ReadTeamProperties(squad)],
             });
         }
     }
@@ -127,36 +115,13 @@ internal sealed class SquadLifecycleHook : IDistributedApplicationEventingSubscr
     // Helpers.
 
     /// <summary>
-    /// Reads live team file stats (inbox depth, last decision) for the dashboard property panel.
+    /// Reads team metadata and live file stats for the dashboard property panel.
     /// </summary>
     private ResourcePropertySnapshot[] ReadTeamProperties(SquadResource squad)
     {
         try
         {
-            var annotation = squad.Annotations.OfType<SquadTeamAnnotation>().FirstOrDefault();
-            if (annotation is null) return [];
-
-            var inboxDepth = Directory.Exists(annotation.InboxDir)
-                ? Directory.GetFiles(annotation.InboxDir).Length
-                : 0;
-
-            var lastDecision = "none";
-            if (File.Exists(annotation.DecisionsMdPath))
-            {
-                var firstLine = File.ReadLines(annotation.DecisionsMdPath)
-                    .FirstOrDefault(l => !string.IsNullOrWhiteSpace(l));
-                if (firstLine is not null)
-                {
-                    lastDecision = firstLine.TrimStart('#', ' ');
-                    if (lastDecision.Length > 80) lastDecision = lastDecision[..80] + "...";
-                }
-            }
-
-            return
-            [
-                new ResourcePropertySnapshot("squad.pendingInbox", inboxDepth.ToString()),
-                new ResourcePropertySnapshot("squad.lastDecision", lastDecision),
-            ];
+            return SquadDashboardProperties.CreateWithLiveStats(squad);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
         {

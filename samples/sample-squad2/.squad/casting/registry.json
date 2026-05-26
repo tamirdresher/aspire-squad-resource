@@ -1,0 +1,84 @@
+{
+  "agents": {
+    "sisko": {
+      "persistent_name": "Sisko",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Incident Commander / SRE Lead",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "kira": {
+      "persistent_name": "Kira",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "SRE Operations & Mitigation",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "dax": {
+      "persistent_name": "Dax",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": ".NET Distributed Systems Engineer",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "bashir": {
+      "persistent_name": "Bashir",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Observability & Diagnostics",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "worf": {
+      "persistent_name": "Worf",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Security Response Engineer",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "odo": {
+      "persistent_name": "Odo",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Compliance & Audit Lead",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "obrien": {
+      "persistent_name": "O'Brien",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Azure DevOps / Platform Engineer",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "rom": {
+      "persistent_name": "Rom",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Database Reliability Engineer",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "nog": {
+      "persistent_name": "Nog",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Data Science & Anomaly Detection",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "quark": {
+      "persistent_name": "Quark",
+      "universe": "Star Trek: Deep Space Nine",
+      "role": "Incident Communications Lead",
+      "created_at": "2026-05-26",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}

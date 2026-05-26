@@ -17,6 +17,7 @@ using Aspire.Hosting.ApplicationModel;
 var builder = DistributedApplication.CreateBuilder(args);
 var repoRoot = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", ".."));
 var sampleSquadRoot = Path.Combine(repoRoot, "samples", "sample-squad");
+var incidentSquadRoot = Path.Combine(repoRoot, "samples", "sample-squad2");
 var upstreamSquadRoot = Environment.GetEnvironmentVariable("UPSTREAM_SQUAD_ROOT");
 
 // Squad resources are logical Aspire resources. They read a .squad/team.md roster
@@ -24,16 +25,19 @@ var upstreamSquadRoot = Environment.GetEnvironmentVariable("UPSTREAM_SQUAD_ROOT"
 builder.AddSquad("research-squad",
     teamRoot: sampleSquadRoot);
 
-// Second squad: same sample workspace, different resource identity.
+// Second squad: another sample squad, different resource identity.
 builder.AddSquad("incident-team",
-    teamRoot: sampleSquadRoot);
+    teamRoot: incidentSquadRoot);
 
 var mafSquad = builder.AddSquad("maf-squad",
-    teamRoot: sampleSquadRoot);
+    teamRoot: incidentSquadRoot);
 
 builder.AddProject<Projects.SquadInABox>("maf-workflow")
     .WithReference(mafSquad)
-    .WithArgs("--team-root", sampleSquadRoot)
+    .WithArgs(
+        "--team-root", incidentSquadRoot,
+        "--construct",
+        "--trace-raw-copilot-content")
     .WithHttpEndpoint(name: "http", env: "HTTP_PORTS")
     .WithHttpCommand(
         path: "/",

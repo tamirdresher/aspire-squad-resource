@@ -53,7 +53,7 @@ public sealed class SquadRuntime
                 "YOLO means PromptlessWithinPolicy only: it never bypasses allowlists, blocklists, protected paths, approval gates, or audit.",
                 "Only low-risk operations already allowed by .squad/policies/tool-allowlists.json may skip prompts in YOLO mode.",
                 "Destructive/high-impact operations still require explicit approval; approval timeouts abort.",
-                "This adapter constructs Microsoft.Agents.AI.GitHub.Copilot.GitHubCopilotAgent objects only when --construct is supplied."
+                "This adapter constructs repo-native Squad AIAgent wrappers backed by Microsoft.Agents.AI.GitHub.Copilot.GitHubCopilotAgent only when --construct is supplied."
             ]);
     }
 }
