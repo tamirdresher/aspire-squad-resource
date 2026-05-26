@@ -124,7 +124,10 @@ public static class RealSquadProgram
             responseCollector.Add(update);
             if (!string.IsNullOrEmpty(update.Text))
             {
-                AnsiConsole.Write(Markup.Escape(update.Text));
+                // Use Console.Out.Write to bypass Spectre's markup/format parsing.
+                // AnsiConsole.Write(string) routes through MarkupInterpolated which calls string.Format,
+                // so any literal '{' in LLM streamed text (code, JSON, templates) throws FormatException.
+                Console.Out.Write(update.Text);
             }
         }
 
@@ -185,7 +188,8 @@ public static class RealSquadProgram
                 collector.Add(update);
                 if (!string.IsNullOrEmpty(update.Text))
                 {
-                    AnsiConsole.Write(Markup.Escape(update.Text));
+                    // Bypass Spectre to avoid FormatException on '{' in streamed LLM text.
+                    Console.Out.Write(update.Text);
                 }
             }
 

@@ -2,6 +2,7 @@ using GitHub.Copilot.SDK;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.GitHub.Copilot;
 using Microsoft.Extensions.AI;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -12,6 +13,8 @@ namespace SquadInABox.RealSquad;
 /// </summary>
 public sealed class SquadAgent : AIAgent, IAsyncDisposable
 {
+    private static readonly ActivitySource s_activitySource = new("SquadInABox.RealSquad");
+
     private static readonly ChatMessage BoundaryMessage = new(
         ChatRole.System,
         "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.");
@@ -68,8 +71,20 @@ public sealed class SquadAgent : AIAgent, IAsyncDisposable
         AgentRunOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var agent = await EnsureInnerAsync(cancellationToken).ConfigureAwait(false);
-        return await agent.RunAsync(AddSquadBoundary(messages), session, options, cancellationToken).ConfigureAwait(false);
+        using var activity = s_activitySource.StartActivity($"real_squad.agent.{_definition.Id}.run", ActivityKind.Internal);
+        SetAgentTags(activity);
+        try
+        {
+            var agent = await EnsureInnerAsync(cancellationToken).ConfigureAwait(false);
+            var response = await agent.RunAsync(AddSquadBoundary(messages), session, options, cancellationToken).ConfigureAwait(false);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 
     protected override async IAsyncEnumerable<AgentResponseUpdate> RunCoreStreamingAsync(
@@ -78,11 +93,31 @@ public sealed class SquadAgent : AIAgent, IAsyncDisposable
         AgentRunOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        using var activity = s_activitySource.StartActivity($"real_squad.agent.{_definition.Id}.run", ActivityKind.Internal);
+        SetAgentTags(activity);
+
         var agent = await EnsureInnerAsync(cancellationToken).ConfigureAwait(false);
         await foreach (var update in agent.RunStreamingAsync(AddSquadBoundary(messages), session, options, cancellationToken).ConfigureAwait(false))
         {
             yield return update;
         }
+        activity?.SetStatus(ActivityStatusCode.Ok);
+    }
+
+    private void SetAgentTags(Activity? activity)
+    {
+        if (activity is null)
+        {
+            return;
+        }
+
+        activity.SetTag("squad.agent.id", _definition.Id);
+        activity.SetTag("squad.agent.name", _definition.Name);
+        activity.SetTag("squad.agent.role", _definition.Role);
+        activity.SetTag("squad.agent.title", _definition.Title);
+        activity.SetTag("squad.agent.description", _definition.Description);
+        activity.SetTag("squad.agent.charter_path", _definition.CharterPath);
+        activity.SetTag("squad.agent.system_prompt.length", _definition.SystemPrompt?.Length);
     }
 
     private async ValueTask<GitHubCopilotAgent> EnsureInnerAsync(CancellationToken cancellationToken)

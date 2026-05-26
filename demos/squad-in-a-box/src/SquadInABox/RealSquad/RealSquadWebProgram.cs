@@ -379,18 +379,17 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
                             observation.AgentNames,
                             observation.NativeMafAgentsConstructed);
 
-                        foreach (var agent in observation.Agents)
+                        if (observation.Agents.Count > 0)
                         {
-                            using var agentActivity = _telemetry.StartAgentActivity(incident, agent);
-                            _traceStore.AddEvent(runId, "AgentAvailable", $"{agent.Id} ({agent.Name}), role: {agent.Role}, model: {agent.Model}, adapter status: {agent.AdapterStatus}");
+                            var rosterSummary = string.Join(", ", observation.Agents.Select(a => $"{a.Id} ({a.Role})"));
+                            _traceStore.AddEvent(
+                                runId,
+                                "AgentRoster",
+                                $"{observation.Agents.Count} agent(s) available: {rosterSummary}");
                             _logger.LogInformation(
-                                "Real Squad agent available: {AgentId} ({AgentName}), role {AgentRole}, model {Model}, adapter status {AdapterStatus}.",
-                                agent.Id,
-                                agent.Name,
-                                agent.Role,
-                                agent.Model,
-                                agent.AdapterStatus);
-                            agentActivity?.SetStatus(ActivityStatusCode.Ok);
+                                "Real Squad agent roster ({AgentCount}): {Roster}",
+                                observation.Agents.Count,
+                                rosterSummary);
                         }
                     },
                     copilotEvent =>
