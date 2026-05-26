@@ -112,6 +112,8 @@ The trace response includes:
 
 This trace data provides visibility into the Squad workflow lifecycle, agent loading sequence, and execution timing. It is observable runtime proof, not a raw transcript of private subagent reasoning or conversation.
 
+The same workflow also emits OpenTelemetry spans to the Aspire dashboard. In **Traces**, open the `maf-workflow` `real_squad.incident` trace and expand it to see one child span per loaded Squad agent, named `real_squad.agent.<agent-id>` with tags for the agent name, role, model, adapter status, and incident metadata.
+
 ## What is included
 
 - `src\CommunityToolkit.Aspire.Hosting.Squad` — Aspire hosting integration and `builder.AddSquad(...)`.

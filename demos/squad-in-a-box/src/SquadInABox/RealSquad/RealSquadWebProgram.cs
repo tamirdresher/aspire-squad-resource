@@ -378,6 +378,7 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
 
                     foreach (var agent in observation.Agents)
                     {
+                        using var agentActivity = _telemetry.StartAgentActivity(incident, agent);
                         _traceStore.AddEvent(runId, "AgentAvailable", $"{agent.Id} ({agent.Name}), role: {agent.Role}, model: {agent.Model}, adapter status: {agent.AdapterStatus}");
                         _logger.LogInformation(
                             "Real Squad agent available: {AgentId} ({AgentName}), role {AgentRole}, model {Model}, adapter status {AdapterStatus}.",
@@ -386,6 +387,7 @@ public sealed class RealSquadTriggeredRunner : BackgroundService
                             agent.Role,
                             agent.Model,
                             agent.AdapterStatus);
+                        agentActivity?.SetStatus(ActivityStatusCode.Ok);
                     }
                 });
                 _state.MarkCompleted(exitCode);
@@ -461,6 +463,19 @@ public sealed class RealSquadTelemetry : IDisposable
         activity?.SetTag("incident.id", incident.Id);
         activity?.SetTag("incident.title", incident.Title);
         activity?.SetTag("incident.severity", incident.Severity);
+        return activity;
+    }
+
+    public Activity? StartAgentActivity(SimulatedIncident incident, RealSquadAgentSnapshot agent)
+    {
+        var activity = _activitySource.StartActivity($"real_squad.agent.{agent.Id}", ActivityKind.Internal);
+        activity?.SetTag("incident.id", incident.Id);
+        activity?.SetTag("incident.severity", incident.Severity);
+        activity?.SetTag("squad.agent.id", agent.Id);
+        activity?.SetTag("squad.agent.name", agent.Name);
+        activity?.SetTag("squad.agent.role", agent.Role);
+        activity?.SetTag("squad.agent.model", agent.Model);
+        activity?.SetTag("squad.agent.adapter_status", agent.AdapterStatus);
         return activity;
     }
 
