@@ -6,6 +6,13 @@ public static class RealSquadProgram
 {
     public static async Task<int> RunAsync(string[] args)
     {
+        return await RunAsync(args, onDescriptionCreated: null);
+    }
+
+    public static async Task<int> RunAsync(
+        string[] args,
+        Action<SquadRuntimeDescription>? onDescriptionCreated)
+    {
         RejectUnsafePolicyBypassArgs(args);
 
         var loader = new SquadContextLoader();
@@ -40,6 +47,7 @@ public static class RealSquadProgram
                 AuditParameters: auditParameters),
             requestedAgentIds.Count == 0 ? null : requestedAgentIds);
 
+        onDescriptionCreated?.Invoke(description);
         Render(description);
 
         foreach (var agent in description.Agents)

@@ -10,6 +10,15 @@ GET {{mafWorkflowUrl}}/status
 ### Health check
 GET {{mafWorkflowUrl}}/health
 
+### Get workflow trace (structured event stream)
+# Returns all workflow run traces with structured events including:
+# - IncidentQueued: When incident is queued for processing
+# - WorkflowStarted: When Squad workflow execution begins
+# - SquadRuntimeDescribed: When Squad runtime loads and describes the team
+# - AgentAvailable: For each agent loaded (with role, model, adapter status)
+# - WorkflowCompleted/WorkflowFailed/WorkflowStopped: Final workflow status
+GET {{mafWorkflowUrl}}/trace
+
 ### Trigger a simulated incident workflow
 POST {{mafWorkflowUrl}}/incidents/simulate?severity=Sev2&title=Database%20latency
 

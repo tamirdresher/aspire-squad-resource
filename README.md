@@ -35,7 +35,82 @@ Invoke-RestMethod "$baseUrl/status"
 
 You can also open `maf-workflow.http`, replace `@mafWorkflowUrl` with the `maf-workflow` URL from the Aspire dashboard, and run the included `GET /`, `GET /status`, `GET /health`, and `POST /incidents/simulate` requests from an HTTP file client.
 
+After **Trigger Incident** completes, `GET /status` includes a `squad` object with the loaded agent names, roles, models, and adapter status. That is the in-band proof that the HTTP trigger ran the real Squad adapter workflow, not just a placeholder endpoint. In the default sample, look for:
+
+```json
+{
+  "status": "Completed",
+  "exitCode": 0,
+  "squad": {
+    "agentsLoaded": 6,
+    "agentNames": "Data, Picard, Ralph, Scribe, Seven, Worf",
+    "nativeMafAgentsConstructed": 0
+  }
+}
+```
+
+The `maf-workflow` console logs also emit one `Real Squad agent available` line per agent, including the role, model, and adapter status. `nativeMafAgentsConstructed` is `0` by default because the safe demo path describes the Copilot-backed MAF agents without requiring Brady to authenticate live Copilot agent construction; pass `--construct` only when live Copilot auth is configured.
+
 The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. Running `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` still starts the original terminal demo; the AppHost path starts the API through Aspire endpoint configuration.
+
+## Workflow trace
+
+The `maf-workflow` API includes a structured trace system to observe the internal workflow execution. After triggering an incident with `POST /incidents/simulate`, you can retrieve detailed event traces showing each stage of the workflow:
+
+### Trace endpoints
+
+- **GET /trace** — Returns all workflow run traces with complete event history
+- **GET /status** — Includes `recentTrace` with the most recent workflow events
+
+### Trace event types
+
+Each workflow execution (identified by `runId`) emits the following structured events:
+
+1. **IncidentQueued** — Incident accepted into processing channel with severity and title
+2. **WorkflowStarted** — Squad workflow execution begins in background service
+3. **SquadRuntimeDescribed** — Squad runtime loads and describes the team composition
+4. **AgentAvailable** — Emitted for each agent loaded (includes role, model, and adapter status)
+5. **WorkflowCompleted** — Successful completion with exit code and duration
+6. **WorkflowFailed** — Exception occurred with error message
+7. **WorkflowStopped** — Workflow cancelled gracefully
+
+### Example trace usage
+
+```powershell
+# Trigger workflow
+$baseUrl = "<maf-workflow url from the Aspire dashboard>"
+Invoke-RestMethod -Method Post "$baseUrl/incidents/simulate?severity=Sev2&title=Database%20latency"
+
+# Get full trace
+Invoke-RestMethod "$baseUrl/trace"
+
+# Get status with recent trace events
+Invoke-RestMethod "$baseUrl/status"
+```
+
+The trace response includes:
+
+```json
+{
+  "traces": [
+    {
+      "runId": "inc-abc123",
+      "startedAt": "2024-01-15T10:30:00Z",
+      "eventCount": 8,
+      "events": [
+        { "timestamp": "2024-01-15T10:30:00Z", "eventType": "IncidentQueued", "message": "Severity: Sev2, Title: Database latency" },
+        { "timestamp": "2024-01-15T10:30:01Z", "eventType": "WorkflowStarted", "message": "Starting workflow for inc-abc123" },
+        { "timestamp": "2024-01-15T10:30:02Z", "eventType": "SquadRuntimeDescribed", "message": "Squad loaded with 6 agents" },
+        { "timestamp": "2024-01-15T10:30:03Z", "eventType": "AgentAvailable", "message": "data (Data), role: Code Expert, model: gpt-5, adapter status: described" },
+        { "timestamp": "2024-01-15T10:30:10Z", "eventType": "WorkflowCompleted", "message": "Exit code: 0, Duration: 9.2s" }
+      ]
+    }
+  ],
+  "totalRuns": 1
+}
+```
+
+This trace data provides visibility into the Squad workflow lifecycle, agent loading sequence, and execution timing. It is observable runtime proof, not a raw transcript of private subagent reasoning or conversation.
 
 ## What is included
 
