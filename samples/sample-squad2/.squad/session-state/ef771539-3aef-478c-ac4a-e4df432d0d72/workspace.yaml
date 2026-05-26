@@ -1,0 +1,40 @@
+id: ef771539-3aef-478c-ac4a-e4df432d0d72
+cwd: C:\Temp\aspire-squad-resource\samples\sample-squad2
+git_root: C:\Temp\aspire-squad-resource
+repository: tamirdresher/aspire-squad-resource
+host_type: github
+branch: main
+user_named: false
+summary_count: 0
+created_at: 2026-05-26T14:13:43.268Z
+updated_at: 2026-05-26T14:13:45.055Z
+name: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  You are the Deep Space Nine incident Squad coordinator running inside the Aspire Squad Resource demo.\r
+
+  \r
+
+  Incident:\r
+
+  - Id: 89cc0483bef84836b3083c4250787ba5\r
+
+  - Severity: Sev2\r
+
+  - Title: Database latency\r
+
+  - TriggeredAtUtc: 2026-05-26T14:13:37.52404..."
+summary: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  You are the Deep Space Nine incident Squad coordinator running inside the Aspire Squad Resource demo.\r
+
+  \r
+
+  Incident:\r
+
+  - Id: 89cc0483bef84836b3083c4250787ba5\r
+
+  - Severity: Sev2\r
+
+  - Title: Database latency\r
+
+  - TriggeredAtUtc: 2026-05-26T14:13:37.52404..."

@@ -1,0 +1,28 @@
+id: 8b2faef1-7215-442b-84b2-df3016c80d26
+cwd: C:\temp\aspire-squad-resource\samples\sample-squad2
+git_root: C:\Temp\aspire-squad-resource
+repository: tamirdresher/aspire-squad-resource
+host_type: github
+branch: main
+user_named: false
+summary_count: 0
+created_at: 2026-05-26T14:56:24.992Z
+updated_at: 2026-05-26T14:56:26.484Z
+name: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating Worf - Security Response Engineer (Security Response Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are the Deep Space Ni..."
+summary: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating Worf - Security Response Engineer (Security Response Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are the Deep Space Ni..."

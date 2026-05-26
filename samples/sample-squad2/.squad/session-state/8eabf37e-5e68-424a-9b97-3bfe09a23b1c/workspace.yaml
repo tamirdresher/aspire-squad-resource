@@ -1,0 +1,28 @@
+id: 8eabf37e-5e68-424a-9b97-3bfe09a23b1c
+cwd: C:\temp\aspire-squad-resource\samples\sample-squad2
+git_root: C:\Temp\aspire-squad-resource
+repository: tamirdresher/aspire-squad-resource
+host_type: github
+branch: main
+user_named: false
+summary_count: 0
+created_at: 2026-05-26T14:55:58.676Z
+updated_at: 2026-05-26T14:56:00.401Z
+name: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating O'Brien - Azure DevOps / Platform Engineer (Azure DevOps / Platform Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are th..."
+summary: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating O'Brien - Azure DevOps / Platform Engineer (Azure DevOps / Platform Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are th..."

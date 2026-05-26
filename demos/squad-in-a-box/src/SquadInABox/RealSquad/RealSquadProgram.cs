@@ -7,6 +7,18 @@ namespace SquadInABox.RealSquad;
 
 public static class RealSquadProgram
 {
+    private static readonly string[] IncidentSubagentPriority =
+    [
+        "kira",
+        "bashir",
+        "dax",
+        "rom",
+        "obrien",
+        "worf",
+        "quark",
+        "scribe"
+    ];
+
     public static async Task<int> RunAsync(string[] args)
     {
         return await RunAsync(args, onDescriptionCreated: null);
@@ -121,6 +133,120 @@ public static class RealSquadProgram
         {
             onCopilotSessionEvent?.Invoke(responseEvent);
         }
+
+        await RunSubagentHandoffsAsync(
+            description,
+            coordinator.Definition,
+            prompt,
+            responseCollector.CombinedContent,
+            includeRawCopilotSessionContent,
+            onCopilotSessionEvent);
+    }
+
+    private static async Task RunSubagentHandoffsAsync(
+        SquadRuntimeDescription description,
+        SquadAgentDefinition coordinator,
+        string incidentPrompt,
+        string coordinatorResponse,
+        bool includeRawCopilotSessionContent,
+        Action<CopilotSessionTraceEvent>? onCopilotSessionEvent)
+    {
+        var subagents = SelectIncidentSubagents(description, coordinator.Id);
+        if (subagents.Count == 0)
+        {
+            return;
+        }
+
+        AnsiConsole.Write(new Rule("[bold cyan1]Live subagent handoffs[/]"));
+        foreach (var subagent in subagents)
+        {
+            if (subagent.NativeAgent is not AIAgent nativeSubagent)
+            {
+                continue;
+            }
+
+            var activationPrompt = CreateSubagentActivationPrompt(
+                coordinator,
+                subagent.Definition,
+                incidentPrompt,
+                coordinatorResponse);
+
+            AnsiConsole.MarkupLine($"[bold]Activating subagent:[/] {Markup.Escape(subagent.Definition.Id)} ({Markup.Escape(subagent.Definition.Name)})");
+            onCopilotSessionEvent?.Invoke(
+                CopilotSessionTraceMapper.FromSubagentPrompt(
+                    coordinator.Id,
+                    subagent.Definition,
+                    activationPrompt,
+                    includeRawCopilotSessionContent));
+
+            var collector = new AgentResponseUpdateCollector(coordinator.Id, includeRawCopilotSessionContent);
+            await foreach (var update in nativeSubagent.RunStreamingAsync([new ChatMessage(ChatRole.User, activationPrompt)]))
+            {
+                collector.Add(update);
+                if (!string.IsNullOrEmpty(update.Text))
+                {
+                    AnsiConsole.Write(Markup.Escape(update.Text));
+                }
+            }
+
+            AnsiConsole.WriteLine();
+            foreach (var responseEvent in collector.CreateSummaryEvents())
+            {
+                onCopilotSessionEvent?.Invoke(responseEvent);
+            }
+        }
+    }
+
+    private static IReadOnlyList<CopilotBackedMafAgent> SelectIncidentSubagents(
+        SquadRuntimeDescription description,
+        string coordinatorId)
+    {
+        return description.Agents
+            .Where(agent =>
+                !string.Equals(agent.Definition.Id, coordinatorId, StringComparison.OrdinalIgnoreCase) &&
+                agent.NativeAgent is AIAgent)
+            .OrderBy(agent => GetIncidentSubagentPriority(agent.Definition.Id))
+            .ThenBy(agent => agent.Definition.Id, StringComparer.OrdinalIgnoreCase)
+            .Take(6)
+            .ToArray();
+    }
+
+    private static int GetIncidentSubagentPriority(string agentId)
+    {
+        var index = Array.FindIndex(
+            IncidentSubagentPriority,
+            priority => string.Equals(priority, agentId, StringComparison.OrdinalIgnoreCase));
+        return index < 0 ? int.MaxValue : index;
+    }
+
+    private static string CreateSubagentActivationPrompt(
+        SquadAgentDefinition coordinator,
+        SquadAgentDefinition subagent,
+        string incidentPrompt,
+        string coordinatorResponse)
+    {
+        return $"""
+            {coordinator.Name} is coordinating this live incident workflow and is activating {subagent.Name} ({subagent.Role}) as a real Squad subagent.
+
+            Original incident prompt:
+            {incidentPrompt}
+
+            Coordinator response so far:
+            {TrimForPrompt(coordinatorResponse)}
+
+            Respond as {subagent.Name}. Provide your first operational update only: what evidence you need, what you would check first, immediate mitigation advice, and one concise handoff/status line back to {coordinator.Name}. Do not modify files or external systems.
+            """;
+    }
+
+    private static string TrimForPrompt(string value)
+    {
+        const int maxLength = 4_000;
+        if (value.Length <= maxLength)
+        {
+            return value;
+        }
+
+        return value[..maxLength] + Environment.NewLine + "[truncated]";
     }
 
     private static CopilotBackedMafAgent SelectCoordinator(SquadRuntimeDescription description)
@@ -361,6 +487,12 @@ public static class RealSquadProgram
                     _includeRawContent);
             }
         }
+
+        public string CombinedContent => string.Join(
+            Environment.NewLine,
+            _responses.Values
+                .Select(buffer => buffer.Content)
+                .Where(content => !string.IsNullOrWhiteSpace(content)));
     }
 
     private sealed class ResponseBuffer

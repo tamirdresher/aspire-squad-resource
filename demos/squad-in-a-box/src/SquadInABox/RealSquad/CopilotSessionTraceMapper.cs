@@ -304,6 +304,40 @@ public static class CopilotSessionTraceMapper
             RawUserPrompt: Raw(prompt, includeRawContent));
     }
 
+    public static CopilotSessionTraceEvent FromSubagentPrompt(
+        string rootAgentId,
+        SquadAgentDefinition subagent,
+        string prompt,
+        bool includeRawContent = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootAgentId);
+        ArgumentNullException.ThrowIfNull(subagent);
+        ArgumentNullException.ThrowIfNull(prompt);
+
+        return new CopilotSessionTraceEvent(
+            EventType: "subagent.activation.prompt",
+            RootAgentId: rootAgentId,
+            SdkAgentId: subagent.Id,
+            SubagentName: subagent.Id,
+            SubagentDisplayName: subagent.Name,
+            Model: null,
+            ToolName: null,
+            ToolCallId: null,
+            DurationMs: null,
+            TotalTokens: null,
+            TotalToolCalls: null,
+            ContentLength: prompt.Length,
+            ContentSha256: Hash(prompt),
+            Status: "submitted",
+            ErrorMessage: null,
+            Tools: null,
+            RawSubagentDescription: Raw(subagent.Description, includeRawContent),
+            RawToolArguments: null,
+            RawToolResult: null,
+            RawAssistantContent: null,
+            RawUserPrompt: Raw(prompt, includeRawContent));
+    }
+
     private static CopilotSessionTraceEvent CreateAssistantEvent(
         string rootAgentId,
         AssistantMessageEvent assistant,

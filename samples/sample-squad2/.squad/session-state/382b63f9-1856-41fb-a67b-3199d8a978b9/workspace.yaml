@@ -1,0 +1,44 @@
+id: 382b63f9-1856-41fb-a67b-3199d8a978b9
+cwd: C:\Temp\aspire-squad-resource\samples\sample-squad2
+git_root: C:\Temp\aspire-squad-resource
+repository: tamirdresher/aspire-squad-resource
+host_type: github
+branch: main
+user_named: false
+summary_count: 0
+created_at: 2026-05-26T13:12:22.572Z
+updated_at: 2026-05-26T13:12:24.374Z
+name: "You are the Deep Space Nine incident Squad coordinator running inside the Aspire Squad Resource demo.\r
+
+  \r
+
+  Incident:\r
+
+  - Id: 10102b9da2194e4dace4f2a6fd744be6\r
+
+  - Severity: Sev1\r
+
+  - Title: Database latency with checkout errors\r
+
+  - TriggeredAtUtc: 2026-05-26T13:12:19.2218529+00:00\r
+
+  \r
+
+  Route this live incident using the configured .squad custom agents. Spawn the most relevant subagents for incident command, observability diagnostics, platform, database reliability, security, and communications as needed...."
+summary: "You are the Deep Space Nine incident Squad coordinator running inside the Aspire Squad Resource demo.\r
+
+  \r
+
+  Incident:\r
+
+  - Id: 10102b9da2194e4dace4f2a6fd744be6\r
+
+  - Severity: Sev1\r
+
+  - Title: Database latency with checkout errors\r
+
+  - TriggeredAtUtc: 2026-05-26T13:12:19.2218529+00:00\r
+
+  \r
+
+  Route this live incident using the configured .squad custom agents. Spawn the most relevant subagents for incident command, observability diagnostics, platform, database reliability, security, and communications as needed...."

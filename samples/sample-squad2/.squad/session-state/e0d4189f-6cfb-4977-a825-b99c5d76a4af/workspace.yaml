@@ -1,0 +1,28 @@
+id: e0d4189f-6cfb-4977-a825-b99c5d76a4af
+cwd: C:\temp\aspire-squad-resource\samples\sample-squad2
+git_root: C:\Temp\aspire-squad-resource
+repository: tamirdresher/aspire-squad-resource
+host_type: github
+branch: main
+user_named: false
+summary_count: 0
+created_at: 2026-05-26T14:55:38.051Z
+updated_at: 2026-05-26T14:55:39.944Z
+name: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating Rom - Database Reliability Engineer (Database Reliability Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are the Deep Spa..."
+summary: "You are running as a repo-native Squad custom agent. Follow the loaded .squad charter, use configured subagents when delegation is needed, and keep the run safe: do not modify files or external systems unless the caller explicitly asks for that operation.
+
+  Sisko - Incident Commander / SRE Lead is coordinating this live incident workflow and is activating Rom - Database Reliability Engineer (Database Reliability Engineer) as a real Squad subagent.\r
+
+  \r
+
+  Original incident prompt:\r
+
+  You are the Deep Spa..."
