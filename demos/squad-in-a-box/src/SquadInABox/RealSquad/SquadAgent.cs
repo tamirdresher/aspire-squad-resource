@@ -10,7 +10,7 @@ namespace SquadInABox.RealSquad;
 /// <summary>
 /// MAF agent wrapper for a repo-native Squad charter.
 /// </summary>
-public sealed class RealSquadMafAgent : AIAgent, IAsyncDisposable
+public sealed class SquadAgent : AIAgent, IAsyncDisposable
 {
     private static readonly ChatMessage BoundaryMessage = new(
         ChatRole.System,
@@ -22,7 +22,7 @@ public sealed class RealSquadMafAgent : AIAgent, IAsyncDisposable
     private GitHubCopilotAgent? _inner;
     private CopilotClient? _client;
 
-    public RealSquadMafAgent(
+    public SquadAgent(
         SquadAgentDefinition definition,
         SquadRuntimeOptions options,
         IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)

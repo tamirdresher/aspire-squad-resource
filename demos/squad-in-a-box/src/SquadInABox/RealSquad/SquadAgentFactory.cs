@@ -30,12 +30,12 @@ public sealed class SquadAgentFactory
             NativeAgent: nativeAgent);
     }
 
-    private static RealSquadMafAgent CreateNativeAgent(
+    private static SquadAgent CreateNativeAgent(
         SquadAgentDefinition definition,
         SquadRuntimeOptions options,
         IReadOnlyCollection<SquadAgentDefinition> customAgentDefinitions)
     {
-        return new RealSquadMafAgent(definition, options, customAgentDefinitions);
+        return new SquadAgent(definition, options, customAgentDefinitions);
     }
 
     public static CopilotClientOptions CreateClientOptions(SquadRuntimeOptions options)

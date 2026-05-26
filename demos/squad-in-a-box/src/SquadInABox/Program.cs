@@ -70,7 +70,7 @@ var roles = new[]
 
 // Each agent gets its own IChatClient instance (separate conversation history)
 var agents = roles
-    .Select(role => new SquadAgent(CreateChatClient(), role))
+    .Select(role => new SquadInABox.Agents.SquadAgent(CreateChatClient(), role))
     .ToArray();
 
 // ── Run the demo ───────────────────────────────────────────────────────────
