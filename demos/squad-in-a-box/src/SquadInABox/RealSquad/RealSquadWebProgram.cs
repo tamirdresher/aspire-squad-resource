@@ -20,7 +20,6 @@ public static class RealSquadWebProgram
     {
         var runnerArgs = args
             .Where(arg => !string.Equals(arg, "--real-squad", StringComparison.OrdinalIgnoreCase))
-            .Prepend("--real-squad")
             .ToArray();
 
         var builder = WebApplication.CreateBuilder(args);

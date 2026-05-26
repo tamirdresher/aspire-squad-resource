@@ -11,9 +11,28 @@ dotnet build .\AspireSquadResource.sln
 dotnet run --project .\src\Squad.Hosting.Aspire.Demo\Squad.Hosting.Aspire.Demo.csproj
 ```
 
-Open the Aspire dashboard from the AppHost output. The demo uses `samples\sample-squad` as a synthetic, public-safe `.squad` workspace.
+Open the Aspire dashboard URL printed by the AppHost output. The demo uses `samples\sample-squad` as a synthetic, public-safe `.squad` workspace.
 
 Set `UPSTREAM_SQUAD_ROOT` to a local clone of an upstream Squad workspace if you also want the optional `upstream-squad` row to appear in the dashboard.
+
+## Trigger the workflow from the Aspire dashboard
+
+The squad rows (`research-squad`, `incident-team`, and `maf-squad`) are logical Aspire resources. They show roster metadata and commands, but they do not listen on HTTP.
+
+The runnable ASP.NET Core API is the `maf-workflow` project resource. It has an HTTP endpoint in the Aspire dashboard. In the dashboard:
+
+1. Open the **Resources** page.
+2. Find the `maf-workflow` row.
+3. Use its endpoint link in the **Urls** column to open the workflow status JSON (`/status` is also available).
+4. Trigger the sample incident with:
+
+```powershell
+$baseUrl = "<maf-workflow url from the Aspire dashboard>"
+Invoke-RestMethod -Method Post "$baseUrl/incidents/simulate?severity=Sev2&title=Database%20latency"
+Invoke-RestMethod "$baseUrl/status"
+```
+
+The `maf-workflow` resource references `maf-squad` with `.WithReference(mafSquad)`, so the API runs against the same sample `.squad` workspace represented by the `maf-squad` dashboard row. Running `dotnet run` directly in `demos\squad-in-a-box\src\SquadInABox` still starts the original terminal demo; the AppHost path starts the API through Aspire endpoint configuration.
 
 ## What is included
 

@@ -21,7 +21,7 @@ using SquadInABox.RealSquad;
 using SquadInABox.Squad;
 using SquadInABox.UI;
 
-if (args.Contains("--real-squad", StringComparer.OrdinalIgnoreCase))
+if (ShouldRunApi(args))
 {
     return await RealSquadWebProgram.RunAsync(args);
 }
@@ -101,3 +101,7 @@ catch (Exception ex)
     AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
     return 2;
 }
+
+static bool ShouldRunApi(string[] args) =>
+    args.Contains("--real-squad", StringComparer.OrdinalIgnoreCase) ||
+    !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HTTP_PORTS"));

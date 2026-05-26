@@ -7,7 +7,7 @@ using Aspire.Hosting;
 //   research-squad          [Active]     logical squad resource; squad://resource/research-squad?teamRoot=...&agents=...
 //   incident-team           [Active]     logical squad resource; squad://resource/incident-team?teamRoot=...&agents=...
 //   maf-squad               [Active]     logical squad resource; squad://resource/maf-squad?teamRoot=...&agents=...
-//   maf-workflow            [Project]    demos/squad-in-a-box real-Squad MAF web-hosted runner
+//   maf-workflow            [Project]    demos/squad-in-a-box real-Squad MAF web-hosted runner with HTTP endpoint
 //   upstream-squad          [Active]     logical squad resource; squad://resource/upstream-squad?teamRoot=...&agents=... (if cloned locally)
 //
 // Agent rosters are exposed as resource properties on the squad rows rather than as
@@ -32,7 +32,8 @@ var mafSquad = builder.AddSquad("maf-squad",
 
 builder.AddProject<Projects.SquadInABox>("maf-workflow")
     .WithReference(mafSquad)
-    .WithArgs("--real-squad", "--team-root", sampleSquadRoot);
+    .WithArgs("--team-root", sampleSquadRoot)
+    .WithHttpEndpoint(name: "http", env: "HTTP_PORTS");
 
 if (!string.IsNullOrWhiteSpace(upstreamSquadRoot) && Directory.Exists(upstreamSquadRoot))
 {
